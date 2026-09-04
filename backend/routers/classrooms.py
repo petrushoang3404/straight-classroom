@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from schemas.classrooms import Classroom
+from backend.schemas.classrooms import Classroom
 
 router = APIRouter(
     prefix="/classrooms",
