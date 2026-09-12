@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, create_engine, Session, text
 from backend.config import settings
-from backend.models.classroom import Classroom
+from backend.models.classrooms import Classroom
 
 
 DATABASE_URL = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@localhost/{settings.postgres_db}"

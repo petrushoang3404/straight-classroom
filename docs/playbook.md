@@ -1,5 +1,31 @@
 ## Backend
 
+### Install podman compose
+
+```
+sudo dnf install podman-compose
+
+podman-compose --version
+```
+
+Then `podman compose up -d` can be used normally.
+
+When type `podman compose`, `podman` search for compose provider (compose implementation). `podman-compose` or `docker-compose` are those providers.
+
+```
+podman compose
+     │
+     │ tìm Compose provider
+     ▼
+podman-compose
+     │
+     ▼
+   Podman
+     │
+     ▼
+ Containers
+```
+
 ### Ignore \_\_pycache\_\_
 
 ```
@@ -13,7 +39,7 @@ __pycache__/
 *.py[cod]   # means ignore every file name ends with pyc, pyo, pyd
 ```
 
-Remove these files from git, because we have already commit it
+Remove these files from git, because we have already commit it:
 
 ```
 git rm -r --cached backend/**/__pycache__
