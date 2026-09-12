@@ -1,1 +1,4 @@
-https://fastapi.tiangolo.com/fastapi-cli/?utm_source=chatgpt.com
+## Backend
+- fastapi-cli: https://fastapi.tiangolo.com/fastapi-cli/
+
+## Frontend
