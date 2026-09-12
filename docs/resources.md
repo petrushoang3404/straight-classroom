@@ -1,0 +1,1 @@
+https://fastapi.tiangolo.com/fastapi-cli/?utm_source=chatgpt.com
