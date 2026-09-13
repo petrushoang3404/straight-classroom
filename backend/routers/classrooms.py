@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Query, Depends
-from backend.schemas.classrooms import ClassroomCreateRequest, ClassroomsResponse
+from fastapi import APIRouter, Query, Depends, status
+from backend.schemas.classrooms import (
+    ClassroomCreateRequest,
+    ClassroomResponse,
+    ClassroomsResponse,
+)
 from backend.repository.classrooms import ClassroomRepo 
 
 router = APIRouter(
     prefix="/classrooms",
     tags=["classrooms"])
 
-## TODO
 @router.get("/", response_model=ClassroomsResponse)
 async def get_classrooms(
     limit: int = Query(default=20, ge=1, le=100), 
@@ -28,7 +31,13 @@ async def get_classrooms(
 async def get_classroom(classroom_id: int):
     return {"message": f"Details for classroom {classroom_id}"}
 
-## TODO
-@router.post("/")
-async def create_classroom(classroom: ClassroomCreateRequest):
-    return {"message": f"Classroom {classroom.name} created successfully"}
+@router.post(
+    "/",
+    response_model=ClassroomResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_classroom(
+    classroom: ClassroomCreateRequest,
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    return await repo.create(classroom.model_dump())

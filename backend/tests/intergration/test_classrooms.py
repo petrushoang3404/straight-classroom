@@ -94,3 +94,40 @@ def test_get_classrooms_validates_pagination_params(client, params):
     response = client.get("/classrooms/", params=params)
 
     assert response.status_code == 422
+
+
+def test_create_classroom_returns_created_classroom(client):
+    payload = {
+        "name": "Math Studio",
+        "capacity": 35,
+        "location": "Building D",
+    }
+
+    response = client.post("/classrooms/", json=payload)
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data == {
+        "id": 4,
+        **payload,
+    }
+
+    get_response = client.get("/classrooms/")
+    assert get_response.status_code == 200
+    classrooms = get_response.json()
+    assert classrooms["total"] == 4
+    assert classrooms["items"][-1] == data
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"name": "", "capacity": 35, "location": "Building D"},
+        {"name": "Math Studio", "capacity": 0, "location": "Building D"},
+        {"name": "Math Studio", "capacity": 35, "location": ""},
+    ],
+)
+def test_create_classroom_validates_payload(client, payload):
+    response = client.post("/classrooms/", json=payload)
+
+    assert response.status_code == 422

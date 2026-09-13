@@ -27,3 +27,13 @@ class ClassroomRepo:
             text("SELECT COUNT(*) FROM classroom")
         ).scalar_one()
         return rows, total
+
+    async def create(
+        self,
+        create: dict,
+    ):
+        classroom = Classroom(**create)
+        self.session.add(classroom)
+        self.session.commit()
+        self.session.refresh(classroom)
+        return classroom or None
