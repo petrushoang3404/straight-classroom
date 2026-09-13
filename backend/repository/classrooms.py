@@ -50,3 +50,31 @@ class ClassroomRepo:
         self.session.commit()
         self.session.refresh(classroom)
         return classroom or None
+    
+    async def update(
+        self,
+        classroom_id: int,
+        updates: dict,
+    ):
+        if not updates:
+            return await self.get_by_id(classroom_id)
+        set_clauses = []
+        params = {
+            "classroom_id": classroom_id,
+        }
+        for field, value in updates.items():
+            set_clauses.append(f"{field} = :{field}")
+            params[field] = value
+        query = f"""
+            UPDATE classroom
+            SET {", ".join(set_clauses)}
+            WHERE id = :classroom_id
+            RETURNING id, name, capacity, location
+        """
+        result = self.session.execute(
+            text(query),
+            params,
+        )
+        row = result.mappings().one_or_none()
+        self.session.commit()
+        return row

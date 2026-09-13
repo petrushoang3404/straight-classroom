@@ -2,6 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Depends, HTTPException, status
 from backend.schemas.classrooms import (
     ClassroomCreateRequest,
+    ClassroomUpdateRequest,
     ClassroomResponse,
     ClassroomsResponse,
 )
@@ -51,3 +52,28 @@ async def create_classroom(
     repo: ClassroomRepo = Depends(ClassroomRepo),
 ):
     return await repo.create(classroom.model_dump())
+
+@router.patch("/{classroom_id}", response_model=ClassroomResponse)
+async def update_classroom(
+    classroom_id: Annotated[int, Path(gt=0)],
+    classroom: ClassroomUpdateRequest,
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    updates = classroom.model_dump(
+        exclude_unset=True,
+    )
+    if not updates:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one field must be provided",
+        )
+    result = await repo.update(
+        classroom_id,
+        updates,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Classroom not found",
+        )
+    return result
