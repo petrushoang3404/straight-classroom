@@ -131,3 +131,28 @@ def test_create_classroom_validates_payload(client, payload):
     response = client.post("/classrooms/", json=payload)
 
     assert response.status_code == 422
+
+
+def test_get_classroom_by_id_returns_classroom(client):
+    response = client.get("/classrooms/2")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 2,
+        "name": "Chemistry Lab",
+        "capacity": 24,
+        "location": "Building B",
+    }
+
+
+def test_get_classroom_by_id_returns_404_when_missing(client):
+    response = client.get("/classrooms/999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Classroom not found"}
+
+
+def test_get_classroom_by_id_validates_id(client):
+    response = client.get("/classrooms/0")
+
+    assert response.status_code == 422

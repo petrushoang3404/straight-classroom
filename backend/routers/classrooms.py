@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Query, Depends, status
+from typing import Annotated
+from fastapi import APIRouter, Path, Query, Depends, HTTPException, status
 from backend.schemas.classrooms import (
     ClassroomCreateRequest,
     ClassroomResponse,
@@ -27,9 +28,18 @@ async def get_classrooms(
         total=total,
     )
 
-@router.get("/{classroom_id}")
-async def get_classroom(classroom_id: int):
-    return {"message": f"Details for classroom {classroom_id}"}
+@router.get("/{classroom_id}", response_model=ClassroomResponse)
+async def get_classroom(
+    classroom_id: Annotated[int, Path(gt=0)],
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    classroom = await repo.get_by_id(classroom_id)
+    if classroom is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Classroom not found",
+        )
+    return classroom
 
 @router.post(
     "/",

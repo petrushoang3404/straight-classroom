@@ -28,6 +28,19 @@ class ClassroomRepo:
         ).scalar_one()
         return rows, total
 
+    async def get_by_id(self, classroom_id: int):
+        result = self.session.execute(
+            text("""
+                SELECT id, name, capacity, location
+                FROM classroom
+                WHERE id = :classroom_id
+            """),
+            {
+                "classroom_id": classroom_id,
+            },
+        )
+        return result.mappings().one_or_none()
+
     async def create(
         self,
         create: dict,
