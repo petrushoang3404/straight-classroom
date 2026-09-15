@@ -8,8 +8,8 @@ class ClassroomRepo:
     def __init__(self, session: Session=Depends(get_session)):
         self.session = session
     
-    async def list(self, *, limit: int, offset: int):
-        result = self.session.execute(
+    def list(self, *, limit: int, offset: int):
+        result = self.session.exec(
             text("""
                 SELECT id, name, capacity, location
                 FROM classroom
@@ -17,64 +17,86 @@ class ClassroomRepo:
                 LIMIT :limit
                 OFFSET :offset
             """),
-            {
+            params={
                 "limit": limit,
                 "offset": offset,
             },
         )
         rows = result.mappings().all()
-        total = self.session.execute(
+        total = self.session.exec(
             text("SELECT COUNT(*) FROM classroom")
         ).scalar_one()
         return rows, total
 
-    async def get_by_id(self, classroom_id: int):
-        result = self.session.execute(
+    def get_by_id(self, classroom_id: int):
+        result = self.session.exec(
             text("""
                 SELECT id, name, capacity, location
                 FROM classroom
                 WHERE id = :classroom_id
             """),
-            {
+            params={
                 "classroom_id": classroom_id,
             },
         )
         return result.mappings().one_or_none()
 
-    async def create(
+    def create(
         self,
         create: dict,
     ):
-        classroom = Classroom(**create)
-        self.session.add(classroom)
+        result = self.session.exec(
+            text("""
+                INSERT INTO classroom (name, capacity, location)
+                VALUES (:name, :capacity, :location)
+                RETURNING id, name, capacity, location
+            """),
+            params={
+                "name": create["name"],
+                "capacity": create["capacity"],
+                "location": create["location"],
+            },
+        )
+        classroom = result.mappings().one_or_none()
         self.session.commit()
-        self.session.refresh(classroom)
         return classroom or None
-    
-    async def update(
+
+    def update(
         self,
         classroom_id: int,
         updates: dict,
     ):
-        if not updates:
-            return await self.get_by_id(classroom_id)
-        set_clauses = []
-        params = {
-            "classroom_id": classroom_id,
-        }
-        for field, value in updates.items():
-            set_clauses.append(f"{field} = :{field}")
-            params[field] = value
-        query = f"""
-            UPDATE classroom
-            SET {", ".join(set_clauses)}
-            WHERE id = :classroom_id
-            RETURNING id, name, capacity, location
-        """
-        result = self.session.execute(
-            text(query),
-            params,
+        result = self.session.exec(
+            text("""
+                UPDATE classroom
+                SET name = COALESCE(:name, name),
+                    capacity = COALESCE(:capacity, capacity),
+                    location = COALESCE(:location, location)
+                WHERE id = :classroom_id
+                RETURNING id, name, capacity, location
+            """),
+            params={
+                "classroom_id": classroom_id,
+                "name": updates.get("name"),
+                "capacity": updates.get("capacity"),
+                "location": updates.get("location"),
+            },
         )
         row = result.mappings().one_or_none()
         self.session.commit()
-        return row
+        return row or None
+
+    def delete(self, classroom_id: int):
+        result = self.session.exec(
+            text("""
+                DELETE FROM classroom
+                WHERE id = :classroom_id
+                RETURNING id, name, capacity, location
+            """),
+            params={
+                "classroom_id": classroom_id,
+            },
+        )
+        row = result.mappings().one_or_none()
+        self.session.commit()
+        return row or None

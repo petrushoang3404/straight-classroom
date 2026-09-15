@@ -2,8 +2,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from backend.repository.database import create_db_and_tables, engine, ping_db
-from backend.routers.classrooms import router
-
+from backend.routers.classrooms import router as classrooms_router
+from backend.routers.teachers import router as teachers_router
 
 app = FastAPI()
 
@@ -17,4 +17,5 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(router)
+app.include_router(classrooms_router)
+app.include_router(teachers_router)
