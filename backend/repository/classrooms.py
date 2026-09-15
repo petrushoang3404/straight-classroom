@@ -1,13 +1,14 @@
 from fastapi import Depends
-from backend.models.classrooms import Classroom
-from backend.repository.database import get_session
-from sqlmodel import Session
 from sqlalchemy import text
+from sqlmodel import Session
+
+from backend.repository.database import get_session
+
 
 class ClassroomRepo:
-    def __init__(self, session: Session=Depends(get_session)):
+    def __init__(self, session: Session = Depends(get_session)):
         self.session = session
-    
+
     def list(self, *, limit: int, offset: int):
         result = self.session.exec(
             text("""
@@ -23,9 +24,7 @@ class ClassroomRepo:
             },
         )
         rows = result.mappings().all()
-        total = self.session.exec(
-            text("SELECT COUNT(*) FROM classroom")
-        ).scalar_one()
+        total = self.session.exec(text("SELECT COUNT(*) FROM classroom")).scalar_one()
         return rows, total
 
     def get_by_id(self, classroom_id: int):

@@ -1,22 +1,22 @@
 from typing import Annotated
-from fastapi import APIRouter, Path, Query, Depends, HTTPException, status
+
+from backend.repository.classrooms import ClassroomRepo
 from backend.schemas.classrooms import (
     ClassroomCreateRequest,
-    ClassroomUpdateRequest,
     ClassroomResponse,
     ClassroomsResponse,
+    ClassroomUpdateRequest,
 )
-from backend.repository.classrooms import ClassroomRepo 
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-router = APIRouter(
-    prefix="/classrooms",
-    tags=["classrooms"])
+router = APIRouter(prefix="/classrooms", tags=["classrooms"])
+
 
 @router.get("/", response_model=ClassroomsResponse)
 def get_classrooms(
-    limit: int = Query(default=20, ge=1, le=100), 
+    limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    repo: ClassroomRepo = Depends(ClassroomRepo)
+    repo: ClassroomRepo = Depends(ClassroomRepo),
 ):
     rows, total = repo.list(
         limit=limit,
@@ -28,6 +28,7 @@ def get_classrooms(
         offset=offset,
         total=total,
     )
+
 
 @router.get("/{classroom_id}", response_model=ClassroomResponse)
 def get_classroom(
@@ -42,6 +43,7 @@ def get_classroom(
         )
     return classroom
 
+
 @router.post(
     "/",
     response_model=ClassroomResponse,
@@ -52,6 +54,7 @@ def create_classroom(
     repo: ClassroomRepo = Depends(ClassroomRepo),
 ):
     return repo.create(classroom.model_dump())
+
 
 @router.patch("/{classroom_id}", response_model=ClassroomResponse)
 def update_classroom(

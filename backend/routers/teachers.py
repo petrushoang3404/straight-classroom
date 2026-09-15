@@ -1,25 +1,23 @@
-from fastapi import APIRouter
-from fastapi import APIRouter, Path, Query, Depends, HTTPException, status
+from typing import Annotated
+
 from backend.repository.teachers import TeacherRepo
 from backend.schemas.teachers import (
     TeacherCreateRequest,
-    TeacherUpdateRequest,
     TeacherResponse,
     TeachersResponse,
+    TeacherUpdateRequest,
 )
-from backend.repository.teachers import TeacherRepo
-from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-router = APIRouter(
-    prefix="/teachers",
-    tags=["teachers"])
+router = APIRouter(prefix="/teachers", tags=["teachers"])
+
 
 @router.get("/", response_model=TeachersResponse)
 def get_teachers(
     teacher_name: Annotated[str | None, Query(min_length=1)] = None,
-    limit: int = Query(default=20, ge=1, le=100), 
+    limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    repo: TeacherRepo = Depends(TeacherRepo)
+    repo: TeacherRepo = Depends(TeacherRepo),
 ):
     if teacher_name:
         rows = repo.get_by_name(teacher_name, limit, offset)
@@ -36,6 +34,7 @@ def get_teachers(
         total=total,
     )
 
+
 @router.get("/{teacher_id}", response_model=TeacherResponse)
 def get_teacher(
     teacher_id: Annotated[int, Path(gt=0)],
@@ -49,6 +48,7 @@ def get_teacher(
         )
     return teacher
 
+
 @router.post(
     "/",
     response_model=TeacherResponse,
@@ -59,6 +59,7 @@ def create_teacher(
     repo: TeacherRepo = Depends(TeacherRepo),
 ):
     return repo.create(teacher.model_dump())
+
 
 @router.patch("/{teacher_id}", response_model=TeacherResponse)
 def update_teacher(
@@ -82,6 +83,7 @@ def update_teacher(
             detail="Teacher not found",
         )
     return result
+
 
 @router.delete("/{teacher_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_teacher(
