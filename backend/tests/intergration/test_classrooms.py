@@ -94,3 +94,114 @@ def test_get_classrooms_validates_pagination_params(client, params):
     response = client.get("/classrooms/", params=params)
 
     assert response.status_code == 422
+
+
+def test_create_classroom_returns_created_classroom(client):
+    payload = {
+        "name": "Math Studio",
+        "capacity": 35,
+        "location": "Building D",
+    }
+
+    response = client.post("/classrooms/", json=payload)
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data == {
+        "id": 4,
+        **payload,
+    }
+
+    get_response = client.get("/classrooms/")
+    assert get_response.status_code == 200
+    classrooms = get_response.json()
+    assert classrooms["total"] == 4
+    assert classrooms["items"][-1] == data
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"name": "", "capacity": 35, "location": "Building D"},
+        {"name": "Math Studio", "capacity": 0, "location": "Building D"},
+        {"name": "Math Studio", "capacity": 35, "location": ""},
+    ],
+)
+def test_create_classroom_validates_payload(client, payload):
+    response = client.post("/classrooms/", json=payload)
+
+    assert response.status_code == 422
+
+
+def test_get_classroom_by_id_returns_classroom(client):
+    response = client.get("/classrooms/2")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 2,
+        "name": "Chemistry Lab",
+        "capacity": 24,
+        "location": "Building B",
+    }
+
+
+def test_get_classroom_by_id_returns_404_when_missing(client):
+    response = client.get("/classrooms/999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Classroom not found"}
+
+
+def test_get_classroom_by_id_validates_id(client):
+    response = client.get("/classrooms/0")
+
+    assert response.status_code == 422
+
+
+def test_update_classroom_updates_provided_fields(client):
+    payload = {
+        "capacity": 28,
+        "location": "Building B - Renovated",
+    }
+
+    response = client.patch("/classrooms/2", json=payload)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 2,
+        "name": "Chemistry Lab",
+        "capacity": 28,
+        "location": "Building B - Renovated",
+    }
+
+    get_response = client.get("/classrooms/2")
+    assert get_response.status_code == 200
+    assert get_response.json() == response.json()
+
+
+def test_update_classroom_returns_404_when_missing(client):
+    response = client.patch("/classrooms/999", json={"name": "Unknown Room"})
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Classroom not found"}
+
+
+def test_update_classroom_rejects_empty_payload(client):
+    response = client.patch("/classrooms/2", json={})
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "At least one field must be provided"}
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"name": ""},
+        {"capacity": 0},
+        {"location": ""},
+    ],
+)
+def test_update_classroom_validates_payload(client, payload):
+    response = client.patch("/classrooms/2", json=payload)
+
+    assert response.status_code == 422

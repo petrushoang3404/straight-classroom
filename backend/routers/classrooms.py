@@ -1,12 +1,17 @@
-from fastapi import APIRouter, Query, Depends
-from backend.schemas.classrooms import ClassroomCreateRequest, ClassroomsResponse
+from typing import Annotated
+from fastapi import APIRouter, Path, Query, Depends, HTTPException, status
+from backend.schemas.classrooms import (
+    ClassroomCreateRequest,
+    ClassroomUpdateRequest,
+    ClassroomResponse,
+    ClassroomsResponse,
+)
 from backend.repository.classrooms import ClassroomRepo 
 
 router = APIRouter(
     prefix="/classrooms",
     tags=["classrooms"])
 
-## TODO
 @router.get("/", response_model=ClassroomsResponse)
 async def get_classrooms(
     limit: int = Query(default=20, ge=1, le=100), 
@@ -24,11 +29,51 @@ async def get_classrooms(
         total=total,
     )
 
-@router.get("/{classroom_id}")
-async def get_classroom(classroom_id: int):
-    return {"message": f"Details for classroom {classroom_id}"}
+@router.get("/{classroom_id}", response_model=ClassroomResponse)
+async def get_classroom(
+    classroom_id: Annotated[int, Path(gt=0)],
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    classroom = await repo.get_by_id(classroom_id)
+    if classroom is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Classroom not found",
+        )
+    return classroom
 
-## TODO
-@router.post("/")
-async def create_classroom(classroom: ClassroomCreateRequest):
-    return {"message": f"Classroom {classroom.name} created successfully"}
+@router.post(
+    "/",
+    response_model=ClassroomResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_classroom(
+    classroom: ClassroomCreateRequest,
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    return await repo.create(classroom.model_dump())
+
+@router.patch("/{classroom_id}", response_model=ClassroomResponse)
+async def update_classroom(
+    classroom_id: Annotated[int, Path(gt=0)],
+    classroom: ClassroomUpdateRequest,
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    updates = classroom.model_dump(
+        exclude_unset=True,
+    )
+    if not updates:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one field must be provided",
+        )
+    result = await repo.update(
+        classroom_id,
+        updates,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Classroom not found",
+        )
+    return result
