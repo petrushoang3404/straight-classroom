@@ -6,7 +6,6 @@ import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
-import { useIsMobile } from "@/hooks/use-mobile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -31,6 +30,7 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const MOBILE_BREAKPOINT = 768
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -66,8 +66,21 @@ function SidebarProvider({
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
-  const isMobile = useIsMobile()
+  const [isMobile, setIsMobile] = React.useState(false)
   const [openMobile, setOpenMobile] = React.useState(false)
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+
+    const handleChange = () => {
+      setIsMobile(mediaQuery.matches)
+    }
+
+    handleChange()
+    mediaQuery.addEventListener("change", handleChange)
+
+    return () => mediaQuery.removeEventListener("change", handleChange)
+  }, [])
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -91,7 +104,7 @@ function SidebarProvider({
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
-  }, [isMobile, setOpen, setOpenMobile])
+  }, [isMobile, setOpen])
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -123,7 +136,7 @@ function SidebarProvider({
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, toggleSidebar]
   )
 
   return (
