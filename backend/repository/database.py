@@ -9,6 +9,12 @@ engine = create_engine(DATABASE_URL, echo=True)
 
 
 def create_db_and_tables():
+    # Importing the model modules registers their tables on SQLModel.metadata;
+    # without this, create_all() silently creates nothing.
+    import backend.models.classrooms
+    import backend.models.students
+    import backend.models.teachers  # noqa: F401
+
     SQLModel.metadata.create_all(engine)
 
 
