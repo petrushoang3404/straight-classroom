@@ -1,17 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
-
-from backend.repository.students import StudentRepo
-from backend.schemas.students import StudentCreateRequest, StudentResponse, StudentsResponse, StudentUpdateRequest
 from typing import Annotated
 
+from backend.repository.students import StudentRepo
+from backend.schemas.students import (
+    StudentCreateRequest,
+    StudentResponse,
+    StudentsResponse,
+    StudentUpdateRequest,
+)
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+
 router = APIRouter(prefix="/students", tags=["students"])
+
 
 @router.get("/", response_model=StudentsResponse)
 def get_students(
     student_name: Annotated[str | None, Query(min_length=1)] = None,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    repo: StudentRepo = Depends(StudentRepo)
+    repo: StudentRepo = Depends(StudentRepo),
 ):
     if student_name:
         rows = repo.get_by_name(student_name, limit, offset)
@@ -28,6 +34,7 @@ def get_students(
         total=total,
     )
 
+
 @router.get("/{student_id}", response_model=StudentResponse)
 def get_student(
     student_id: Annotated[int, Path(gt=0)],
@@ -41,6 +48,7 @@ def get_student(
         )
     return student
 
+
 @router.post(
     "/",
     response_model=StudentResponse,
@@ -51,6 +59,7 @@ def create_student(
     repo: StudentRepo = Depends(StudentRepo),
 ):
     return repo.create(student.model_dump())
+
 
 @router.patch(
     "/{student_id}",
@@ -77,6 +86,7 @@ def update_student(
             detail="Student not found",
         )
     return result
+
 
 @router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_student(

@@ -152,11 +152,41 @@ def test_create_student_returns_created_student(client):
 @pytest.mark.parametrize(
     "payload",
     [
-        {"saint_name": "", "first_name": "David", "last_name": "Wilson", "division": "C", "classroom_id": 1},
-        {"saint_name": "Joseph", "first_name": "", "last_name": "Wilson", "division": "C", "classroom_id": 1},
-        {"saint_name": "Joseph", "first_name": "David", "last_name": "", "division": "C", "classroom_id": 1},
-        {"saint_name": "Joseph", "first_name": "David", "last_name": "Wilson", "division": "", "classroom_id": 1},
-        {"saint_name": "Joseph", "first_name": "David", "last_name": "Wilson", "division": "C", "classroom_id": 0},
+        {
+            "saint_name": "",
+            "first_name": "David",
+            "last_name": "Wilson",
+            "division": "C",
+            "classroom_id": 1,
+        },
+        {
+            "saint_name": "Joseph",
+            "first_name": "",
+            "last_name": "Wilson",
+            "division": "C",
+            "classroom_id": 1,
+        },
+        {
+            "saint_name": "Joseph",
+            "first_name": "David",
+            "last_name": "",
+            "division": "C",
+            "classroom_id": 1,
+        },
+        {
+            "saint_name": "Joseph",
+            "first_name": "David",
+            "last_name": "Wilson",
+            "division": "",
+            "classroom_id": 1,
+        },
+        {
+            "saint_name": "Joseph",
+            "first_name": "David",
+            "last_name": "Wilson",
+            "division": "C",
+            "classroom_id": 0,
+        },
     ],
 )
 def test_create_student_validates_payload(client, payload):
