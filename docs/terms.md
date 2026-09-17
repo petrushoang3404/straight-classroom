@@ -188,6 +188,56 @@ Purpose: a compact review of the software engineering terms that appear while tu
 - Why it may help later: fast, consistent styling, especially if the project adopts shadcn/ui.
 - Reference: https://tailwindcss.com/docs
 
+### Figma
+
+- A collaborative design tool used to create wireframes, UI mockups, prototypes, and design systems before implementation.
+- In a product workflow: Figma helps align layout, components, spacing, colors, and user flows before React code is written.
+- Why it matters: frontend work becomes faster when developers build from clear designs instead of guessing UI details.
+- Reference: https://help.figma.com/
+
+### Single Page Application
+
+- A web app that loads one HTML page and updates the UI in the browser as the user navigates.
+- In this project: React + Vite is a typical SPA setup; later the app can fetch `/classrooms/` and `/teachers/` without full page reloads.
+- Why it matters: SPAs feel interactive, but need careful handling of routing, loading states, errors, and API calls.
+- Reference: https://developer.mozilla.org/en-US/docs/Glossary/SPA
+
+### Responsive Design
+
+- Designing UI so it works across screen sizes: desktop, tablet, and mobile.
+- Examples: tables may become stacked cards on mobile; forms should keep readable spacing and usable inputs.
+- Why it matters: production apps are used on many devices, not only the developer's laptop.
+- Reference: https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design
+
+### Landing Website/Page
+
+- A focused page designed to introduce a product, explain value, and guide the user toward one main action.
+- Different from an app screen: a landing page sells or explains; an app screen lets users do the actual work.
+- For this classroom project: the main app should prioritize managing teachers/classrooms; a landing page is optional.
+- Reference: https://www.nngroup.com/articles/landing-pages/
+
+### Design System
+
+- A shared set of UI rules, components, tokens, and patterns: colors, typography, spacing, buttons, forms, tables, dialogs.
+- Examples: shadcn/ui components plus Tailwind tokens can become the project's design system.
+- Why it matters: teams build faster and avoid inconsistent screens.
+- Reference: https://www.figma.com/design-systems/
+
+### JavaScript/TypeScript Runtime
+
+- The environment that executes JavaScript or TypeScript-compiled JavaScript.
+- Browser runtime: runs frontend code such as React components.
+- Node.js runtime: runs tooling such as Vite, ESLint, TypeScript, and package managers.
+- In this project: frontend tooling runs on Node.js; the built app runs in the browser.
+- Reference: https://nodejs.org/en/learn/getting-started/introduction-to-nodejs
+
+### JavaScript/TypeScript Package Managers
+
+- npm and Yarn are package managers for JavaScript/TypeScript projects.
+- They install dependencies, run scripts, and manage lockfiles.
+- In this project: `frontend/package.json` defines dependencies and scripts; `frontend/yarn.lock` pins installed versions; examples are `yarn dev`, `yarn build`, and `yarn lint`.
+- Reference: https://yarnpkg.com/getting-started
+
 ### Linter
 
 - A tool that catches risky code patterns and style issues.
