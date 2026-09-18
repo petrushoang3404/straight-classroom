@@ -70,3 +70,5 @@ yarn create vite
 
 echo 'nodeLinker: node-modules' > .yarnrc.yml
 ```
+
+### Install Shadcn/Tailwind

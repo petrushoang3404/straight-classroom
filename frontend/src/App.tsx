@@ -1,12 +1,22 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import {
   GraduationCap,
+  LogOut,
   type LucideIcon,
   School,
   Settings,
   UserRoundCheck,
   UsersRound,
 } from "lucide-react"
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router"
 
 import {
   Sidebar,
@@ -25,11 +35,14 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { toast } from "@/components/ui/toast"
 import { ClassroomDetail, ClassroomsList } from "@/routes/classrooms"
+import { LoginPage } from "@/routes/login"
 import { StudentDetail, StudentsList } from "@/routes/students"
 import { TeacherDetail, TeachersList } from "@/routes/teachers"
+import { useAuthStore } from "@/lib/auth-store"
 
-type Route = {
+type NavRoute = {
   id: "classrooms" | "teachers" | "students"
   path: string
   title: string
@@ -37,7 +50,7 @@ type Route = {
   icon: LucideIcon
 }
 
-const routes: Route[] = [
+const routes: NavRoute[] = [
   {
     id: "classrooms",
     path: "/classrooms",
@@ -62,23 +75,69 @@ const routes: Route[] = [
 ]
 
 function App() {
-  const [path, setPath] = useState(() => normalizePath(window.location.pathname))
+  return (
+    <Routes>
+      <Route element={<PublicRoute />} path="/login" />
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route element={<Navigate replace to="/classrooms" />} index />
+          <Route element={<ClassroomsList />} path="classrooms" />
+          <Route element={<ClassroomDetailRoute />} path="classrooms/:id" />
+          <Route element={<TeachersList />} path="teachers" />
+          <Route element={<TeacherDetailRoute />} path="teachers/:id" />
+          <Route element={<StudentsList />} path="students" />
+          <Route element={<StudentDetailRoute />} path="students/:id" />
+          <Route element={<Navigate replace to="/classrooms" />} path="*" />
+        </Route>
+      </Route>
+    </Routes>
+  )
+}
 
-  useEffect(() => {
-    const handlePopState = () => setPath(normalizePath(window.location.pathname))
-    window.addEventListener("popstate", handlePopState)
-    return () => window.removeEventListener("popstate", handlePopState)
-  }, [])
+function PublicRoute() {
+  const session = useAuthStore((state) => state.session)
+
+  return session ? <Navigate replace to="/classrooms" /> : <LoginPage />
+}
+
+function RequireAuth() {
+  const session = useAuthStore((state) => state.session)
+  const location = useLocation()
+
+  if (!session) {
+    return (
+      <Navigate
+        replace
+        state={{ redirectTo: `${location.pathname}${location.search}` }}
+        to="/login"
+      />
+    )
+  }
+
+  return <Outlet />
+}
+
+function AppLayout() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const session = useAuthStore((state) => state.session)
+  const logout = useAuthStore((state) => state.logout)
 
   const activeRoute = useMemo(
-    () => routes.find((route) => path.startsWith(route.path)) ?? routes[0],
-    [path]
+    () =>
+      routes.find((route) => location.pathname.startsWith(route.path)) ??
+      routes[0],
+    [location.pathname]
   )
 
-  const navigate = (nextPath: string) => {
-    const normalizedPath = normalizePath(nextPath)
-    window.history.pushState({}, "", normalizedPath)
-    setPath(normalizedPath)
+  const handleLogout = () => {
+    logout()
+    navigate("/login", { replace: true })
+    toast.info("Đã đăng xuất", "Phiên làm việc trên thiết bị này đã kết thúc.")
+  }
+
+  if (!session) {
+    return null
   }
 
   return (
@@ -129,11 +188,23 @@ function App() {
         </SidebarContent>
 
         <SidebarFooter>
+          <div className="grid gap-1 px-2 py-1 text-xs group-data-[collapsible=icon]:hidden">
+            <span className="truncate font-medium">{session.displayName}</span>
+            <span className="truncate text-sidebar-foreground/65">
+              {session.username}
+            </span>
+          </div>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton tooltip="Cài đặt">
                 <Settings />
                 <span>Cài đặt</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={handleLogout} tooltip="Đăng xuất">
+                <LogOut />
+                <span>Đăng xuất</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -156,7 +227,7 @@ function App() {
 
         <main className="flex flex-1 flex-col p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">
-            {renderRoute(path, navigate)}
+            <Outlet />
           </div>
         </main>
       </SidebarInset>
@@ -164,43 +235,26 @@ function App() {
   )
 }
 
-function renderRoute(path: string, navigate: (path: string) => void) {
-  const [resource, id] = path.split("/").filter(Boolean)
-  const numericId = Number(id)
-
-  if (resource === "teachers") {
-    return Number.isFinite(numericId) && numericId > 0 ? (
-      <TeacherDetail id={numericId} navigate={navigate} />
-    ) : (
-      <TeachersList navigate={navigate} />
-    )
-  }
-
-  if (resource === "students") {
-    return Number.isFinite(numericId) && numericId > 0 ? (
-      <StudentDetail id={numericId} navigate={navigate} />
-    ) : (
-      <StudentsList navigate={navigate} />
-    )
-  }
-
-  if (resource === "classrooms") {
-    return Number.isFinite(numericId) && numericId > 0 ? (
-      <ClassroomDetail id={numericId} navigate={navigate} />
-    ) : (
-      <ClassroomsList navigate={navigate} />
-    )
-  }
-
-  return <ClassroomsList navigate={navigate} />
+function ClassroomDetailRoute() {
+  const id = usePositiveId()
+  return id ? <ClassroomDetail id={id} /> : <Navigate replace to="/classrooms" />
 }
 
-function normalizePath(path: string) {
-  if (path === "/") {
-    return "/classrooms"
-  }
+function TeacherDetailRoute() {
+  const id = usePositiveId()
+  return id ? <TeacherDetail id={id} /> : <Navigate replace to="/teachers" />
+}
 
-  return path.endsWith("/") && path.length > 1 ? path.slice(0, -1) : path
+function StudentDetailRoute() {
+  const id = usePositiveId()
+  return id ? <StudentDetail id={id} /> : <Navigate replace to="/students" />
+}
+
+function usePositiveId() {
+  const { id } = useParams()
+  const numericId = Number(id)
+
+  return Number.isFinite(numericId) && numericId > 0 ? numericId : null
 }
 
 export default App

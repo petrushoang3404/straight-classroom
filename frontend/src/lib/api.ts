@@ -1,5 +1,6 @@
 import axios from "axios"
 
+import type { AuthSession } from "./auth-store"
 import type { Classroom, PaginatedResponse, Student, Teacher } from "./models"
 import { setupMockApi } from "./mock-api"
 
@@ -48,6 +49,16 @@ function normalizeList<T>(
 }
 
 export const api = {
+  auth: {
+    login: async (credentials: { username: string; password: string }) => {
+      const response = await client.post<AuthSession>("/auth/login", credentials)
+      return response.data
+    },
+    google: async () => {
+      const response = await client.post<AuthSession>("/auth/google")
+      return response.data
+    },
+  },
   classrooms: {
     list: async (params: ListParams = {}) => {
       const response = await client.get<PaginatedResponse<Classroom> | Classroom[]>(

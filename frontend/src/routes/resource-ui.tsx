@@ -5,10 +5,12 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react"
+import { useNavigate } from "react-router"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "@/components/ui/toast"
 import type { PaginatedResponse } from "@/lib/models"
 
 export type ResourceConfig<T extends { id: number }> = {
@@ -35,13 +37,10 @@ export type ResourceConfig<T extends { id: number }> = {
 
 type ResourceProps<T extends { id: number }> = {
   config: ResourceConfig<T>
-  navigate: (path: string) => void
 }
 
-export function ResourceList<T extends { id: number }>({
-  config,
-  navigate,
-}: ResourceProps<T>) {
+export function ResourceList<T extends { id: number }>({ config }: ResourceProps<T>) {
+  const navigate = useNavigate()
   const [items, setItems] = useState<T[]>([])
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState("")
@@ -70,7 +69,13 @@ export function ResourceList<T extends { id: number }>({
           setItems(visibleItems)
           setTotal(response.total ?? responseItems.length)
         })
-        .catch(() => setError("Không thể tải dữ liệu. Vui lòng kiểm tra API."))
+        .catch(() => {
+          setError("Không thể tải dữ liệu. Vui lòng kiểm tra API.")
+          toast.error(
+            "Không thể tải dữ liệu",
+            `Danh sách ${config.title.toLowerCase()} chưa sẵn sàng.`
+          )
+        })
         .finally(() => setLoading(false))
     }, 180)
 
@@ -165,8 +170,8 @@ export function ResourceList<T extends { id: number }>({
 export function ResourceDetail<T extends { id: number }>({
   config,
   id,
-  navigate,
 }: ResourceProps<T> & { id: number }) {
+  const navigate = useNavigate()
   const [item, setItem] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -177,7 +182,13 @@ export function ResourceDetail<T extends { id: number }>({
     config
       .get(id)
       .then(setItem)
-      .catch(() => setError("Không tìm thấy hồ sơ hoặc API chưa sẵn sàng."))
+      .catch(() => {
+        setError("Không tìm thấy hồ sơ hoặc API chưa sẵn sàng.")
+        toast.error(
+          "Không thể mở hồ sơ",
+          `${config.singular} #${id} không tồn tại hoặc API chưa sẵn sàng.`
+        )
+      })
       .finally(() => setLoading(false))
   }, [config, id])
 
