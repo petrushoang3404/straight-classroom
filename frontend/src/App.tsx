@@ -1,10 +1,11 @@
+import { useEffect, useMemo, useState } from "react"
 import {
-  BookOpen,
-  CalendarDays,
   GraduationCap,
-  LayoutDashboard,
+  type LucideIcon,
+  School,
   Settings,
-  Users,
+  UserRoundCheck,
+  UsersRound,
 } from "lucide-react"
 
 import {
@@ -24,16 +25,62 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { ClassroomDetail, ClassroomsList } from "@/routes/classrooms"
+import { StudentDetail, StudentsList } from "@/routes/students"
+import { TeacherDetail, TeachersList } from "@/routes/teachers"
 
-const menuItems = [
-  { title: "Dashboard", icon: LayoutDashboard, active: true },
-  { title: "Lớp học", icon: GraduationCap },
-  { title: "Giáo viên", icon: Users },
-  { title: "Tài liệu", icon: BookOpen },
-  { title: "Lịch học", icon: CalendarDays },
+type Route = {
+  id: "classrooms" | "teachers" | "students"
+  path: string
+  title: string
+  subtitle: string
+  icon: LucideIcon
+}
+
+const routes: Route[] = [
+  {
+    id: "classrooms",
+    path: "/classrooms",
+    title: "Lớp học",
+    subtitle: "Phòng học và sức chứa",
+    icon: School,
+  },
+  {
+    id: "teachers",
+    path: "/teachers",
+    title: "Giáo viên",
+    subtitle: "Phụ trách và chuyên môn",
+    icon: UserRoundCheck,
+  },
+  {
+    id: "students",
+    path: "/students",
+    title: "Học sinh",
+    subtitle: "Hồ sơ và lớp học",
+    icon: UsersRound,
+  },
 ]
 
 function App() {
+  const [path, setPath] = useState(() => normalizePath(window.location.pathname))
+
+  useEffect(() => {
+    const handlePopState = () => setPath(normalizePath(window.location.pathname))
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [])
+
+  const activeRoute = useMemo(
+    () => routes.find((route) => path.startsWith(route.path)) ?? routes[0],
+    [path]
+  )
+
+  const navigate = (nextPath: string) => {
+    const normalizedPath = normalizePath(nextPath)
+    window.history.pushState({}, "", normalizedPath)
+    setPath(normalizedPath)
+  }
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
@@ -49,7 +96,7 @@ function App() {
                     Straight Classroom
                   </span>
                   <span className="truncate text-xs text-sidebar-foreground/70">
-                    Learning workspace
+                    Giáo lý và sinh hoạt lớp
                   </span>
                 </div>
               </SidebarMenuButton>
@@ -64,14 +111,15 @@ function App() {
             <SidebarGroupLabel>Quản lý</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {menuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                {routes.map((route) => (
+                  <SidebarMenuItem key={route.id}>
                     <SidebarMenuButton
-                      isActive={item.active}
-                      tooltip={item.title}
+                      isActive={activeRoute.id === route.id}
+                      onClick={() => navigate(route.path)}
+                      tooltip={route.title}
                     >
-                      <item.icon />
-                      <span>{item.title}</span>
+                      <route.icon />
+                      <span>{route.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -94,43 +142,65 @@ function App() {
       </Sidebar>
 
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-4">
           <SidebarTrigger />
-          <div>
-            <h1 className="text-base font-semibold">Classroom Overview</h1>
-            <p className="text-sm text-muted-foreground">
-              Demo sidebar shadcn trong App.tsx
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-semibold">
+              {activeRoute.title}
+            </h1>
+            <p className="truncate text-sm text-muted-foreground">
+              {activeRoute.subtitle}
             </p>
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col gap-4 p-4">
-          <section className="grid gap-4 md:grid-cols-3">
-            {[
-              ["12", "Lớp đang mở"],
-              ["248", "Học viên"],
-              ["18", "Giáo viên"],
-            ].map(([value, label]) => (
-              <div
-                key={label}
-                className="rounded-lg border bg-card p-4 text-card-foreground"
-              >
-                <div className="text-2xl font-semibold">{value}</div>
-                <div className="text-sm text-muted-foreground">{label}</div>
-              </div>
-            ))}
-          </section>
-
-          <section className="min-h-80 rounded-lg border bg-card p-4 text-card-foreground">
-            <h2 className="text-lg font-semibold">Hoạt động gần đây</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Nhấn nút sidebar hoặc dùng Ctrl+B / Cmd+B để thử collapse.
-            </p>
-          </section>
+        <main className="flex flex-1 flex-col p-4 md:p-6">
+          <div className="mx-auto w-full max-w-6xl">
+            {renderRoute(path, navigate)}
+          </div>
         </main>
       </SidebarInset>
     </SidebarProvider>
   )
+}
+
+function renderRoute(path: string, navigate: (path: string) => void) {
+  const [resource, id] = path.split("/").filter(Boolean)
+  const numericId = Number(id)
+
+  if (resource === "teachers") {
+    return Number.isFinite(numericId) && numericId > 0 ? (
+      <TeacherDetail id={numericId} navigate={navigate} />
+    ) : (
+      <TeachersList navigate={navigate} />
+    )
+  }
+
+  if (resource === "students") {
+    return Number.isFinite(numericId) && numericId > 0 ? (
+      <StudentDetail id={numericId} navigate={navigate} />
+    ) : (
+      <StudentsList navigate={navigate} />
+    )
+  }
+
+  if (resource === "classrooms") {
+    return Number.isFinite(numericId) && numericId > 0 ? (
+      <ClassroomDetail id={numericId} navigate={navigate} />
+    ) : (
+      <ClassroomsList navigate={navigate} />
+    )
+  }
+
+  return <ClassroomsList navigate={navigate} />
+}
+
+function normalizePath(path: string) {
+  if (path === "/") {
+    return "/classrooms"
+  }
+
+  return path.endsWith("/") && path.length > 1 ? path.slice(0, -1) : path
 }
 
 export default App
