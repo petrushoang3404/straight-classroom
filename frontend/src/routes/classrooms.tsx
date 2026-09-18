@@ -28,16 +28,10 @@ const config: ResourceConfig<Classroom> = {
   ],
 }
 
-export function ClassroomsList({ navigate }: { navigate: (path: string) => void }) {
-  return <ResourceList config={config} navigate={navigate} />
+export function ClassroomsList() {
+  return <ResourceList config={config} />
 }
 
-export function ClassroomDetail({
-  id,
-  navigate,
-}: {
-  id: number
-  navigate: (path: string) => void
-}) {
-  return <ResourceDetail config={config} id={id} navigate={navigate} />
+export function ClassroomDetail({ id }: { id: number }) {
+  return <ResourceDetail config={config} id={id} />
 }

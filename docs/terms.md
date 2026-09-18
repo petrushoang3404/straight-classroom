@@ -252,6 +252,16 @@ Purpose: a compact review of the software engineering terms that appear while tu
 - A common frontend option is Prettier, but it is not configured here yet.
 - Reference: https://docs.astral.sh/ruff/formatter/
 
+### Axios
+
+### Mock API
+
+### Zustand
+
+### React Router
+
+### Local Storage/Cookie
+
 ## Database & Runtime
 
 ### PostgreSQL

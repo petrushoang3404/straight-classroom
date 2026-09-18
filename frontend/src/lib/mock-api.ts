@@ -55,6 +55,36 @@ const students: Student[] = [
 export function setupMockApi(client: AxiosInstance) {
   const mock = new MockAdapter(client, { delayResponse: 250 })
 
+  mock.onPost("/auth/login").reply((config) => {
+    const credentials = JSON.parse(config.data || "{}") as {
+      username?: string
+      password?: string
+    }
+    const username = credentials.username?.trim()
+    const password = credentials.password?.trim()
+
+    if (!username || !password) {
+      return [400, { detail: "Username and password are required" }]
+    }
+
+    return [
+      200,
+      {
+        token: "mock-session-token",
+        username,
+        displayName: displayNameFromUsername(username),
+        provider: "password",
+      },
+    ]
+  })
+
+  mock.onPost("/auth/google").reply(200, {
+    token: "mock-google-session-token",
+    username: "google.user@straight-classroom.local",
+    displayName: "Google User",
+    provider: "google",
+  })
+
   mock.onGet("/classrooms/").reply((config) => {
     return [200, listResponse(classrooms, config.params)]
   })
@@ -114,4 +144,12 @@ function studentSearch(student: Student, term: string) {
   return `${student.saint_name} ${student.first_name} ${student.last_name} ${student.division}`
     .toLowerCase()
     .includes(term)
+}
+
+function displayNameFromUsername(username: string) {
+  return username
+    .split(/[.@_-]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ")
 }
