@@ -5,17 +5,31 @@ export type PaginatedResponse<T> = {
   total: number
 }
 
+export type ClassroomSummary = {
+  id: number
+  name: string
+  location: string
+}
+
+export type TeacherSummary = {
+  id: number
+  name: string
+  subject: string
+}
+
 export type Classroom = {
   id: number
   name: string
   capacity: number
   location: string
+  teachers: TeacherSummary[]
 }
 
 export type Teacher = {
   id: number
   name: string
   subject: string
+  classrooms: ClassroomSummary[]
 }
 
 export type Student = {
@@ -25,4 +39,5 @@ export type Student = {
   last_name: string
   division: string
   classroom_id: number
+  classroom: ClassroomSummary
 }

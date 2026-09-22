@@ -1,7 +1,11 @@
 from fastapi import Depends
-from sqlmodel import Session, text
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select
 
+from backend.models.students import Student
 from backend.repository.database import get_session
+from backend.repository.errors import NotFoundError
 
 
 class StudentRepo:
@@ -9,103 +13,70 @@ class StudentRepo:
         self.session = session
 
     def get_by_id(self, student_id: int):
-        result = self.session.exec(
-            text("""
-                SELECT id, saint_name, first_name, last_name, division, classroom_id
-                FROM student
-                WHERE id = :student_id"""),
-            params={
-                "student_id": student_id,
-            },
-        )
-        return result.mappings().one_or_none()
+        return self.session.get(Student, student_id)
 
-    def get_by_name(self, name: str, limit: int, offset: int):
-        result = self.session.exec(
-            text("""
-                SELECT id, saint_name, first_name, last_name, division, classroom_id
-                FROM student
-                WHERE first_name = :name OR last_name = :name
-                ORDER BY id ASC
-                LIMIT :limit
-                OFFSET :offset"""),
-            params={
-                "name": name,
-                "limit": limit,
-                "offset": offset,
-            },
+    def get_by_name(
+        self,
+        name: str,
+        limit: int,
+        offset: int,
+        *,
+        classroom_ids: list[int] | None = None,
+    ):
+        statement = select(Student).where(
+            (Student.first_name == name) | (Student.last_name == name)
         )
-        return result.mappings().all()
+        if classroom_ids is not None:
+            statement = statement.where(Student.classroom_id.in_(classroom_ids))
+        return self.session.exec(
+            statement.order_by(Student.id).limit(limit).offset(offset)
+        ).all()
 
-    def list(self, *, limit: int, offset: int):
-        result = self.session.exec(
-            text("""
-                SELECT id, saint_name, first_name, last_name, division, classroom_id
-                FROM student
-                ORDER BY id ASC
-                LIMIT :limit
-                OFFSET :offset"""),
-            params={
-                "limit": limit,
-                "offset": offset,
-            },
-        )
-        rows = result.mappings().all()
-        total = self.session.exec(text("SELECT COUNT(*) FROM student")).scalar_one()
+    def list(self, *, limit: int, offset: int, classroom_ids: list[int] | None = None):
+        statement = select(Student)
+        count_statement = select(func.count()).select_from(Student)
+        if classroom_ids is not None:
+            statement = statement.where(Student.classroom_id.in_(classroom_ids))
+            count_statement = count_statement.where(
+                Student.classroom_id.in_(classroom_ids)
+            )
+
+        rows = self.session.exec(
+            statement.order_by(Student.id).limit(limit).offset(offset)
+        ).all()
+        total = self.session.exec(count_statement).one()
         return rows, total
 
     def create(self, create: dict):
-        result = self.session.exec(
-            text("""
-                INSERT INTO student (saint_name, first_name, last_name, division, classroom_id)
-                VALUES (:saint_name, :first_name, :last_name, :division, :classroom_id)
-                RETURNING id, saint_name, first_name, last_name, division, classroom_id"""),
-            params={
-                "saint_name": create["saint_name"],
-                "first_name": create["first_name"],
-                "last_name": create["last_name"],
-                "division": create["division"],
-                "classroom_id": create["classroom_id"],
-            },
-        )
-        student = result.mappings().one_or_none()
-        self.session.commit()
-        return student or None
+        student = Student(**create)
+        self.session.add(student)
+        try:
+            self.session.commit()
+        except IntegrityError as exc:
+            self.session.rollback()
+            raise NotFoundError("Classroom not found") from exc
+        self.session.refresh(student)
+        return student
 
     def update(self, student_id: int, update: dict):
-        result = self.session.exec(
-            text("""
-                UPDATE student
-                SET saint_name = COALESCE(:saint_name, saint_name),
-                    first_name = COALESCE(:first_name, first_name),
-                    last_name = COALESCE(:last_name, last_name),
-                    division = COALESCE(:division, division),
-                    classroom_id = COALESCE(:classroom_id, classroom_id)
-                WHERE id = :student_id
-                RETURNING id, saint_name, first_name, last_name, division, classroom_id"""),
-            params={
-                "student_id": student_id,
-                "saint_name": update.get("saint_name"),
-                "first_name": update.get("first_name"),
-                "last_name": update.get("last_name"),
-                "division": update.get("division"),
-                "classroom_id": update.get("classroom_id"),
-            },
-        )
-        student = result.mappings().one_or_none()
-        self.session.commit()
-        return student or None
+        student = self.session.get(Student, student_id)
+        if student is None:
+            return None
+        for field, value in update.items():
+            setattr(student, field, value)
+        self.session.add(student)
+        try:
+            self.session.commit()
+        except IntegrityError as exc:
+            self.session.rollback()
+            raise NotFoundError("Classroom not found") from exc
+        self.session.refresh(student)
+        return student
 
     def delete(self, student_id: int):
-        result = self.session.exec(
-            text("""
-                DELETE FROM student
-                WHERE id = :student_id
-                RETURNING id, saint_name, first_name, last_name, division, classroom_id"""),
-            params={
-                "student_id": student_id,
-            },
-        )
-        student = result.mappings().one_or_none()
+        student = self.session.get(Student, student_id)
+        if student is None:
+            return None
+        self.session.delete(student)
         self.session.commit()
-        return student or None
+        return student

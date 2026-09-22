@@ -24,6 +24,13 @@ const config: ResourceConfig<Classroom> = {
     { label: "Tên lớp", value: (classroom) => classroom.name },
     { label: "Địa điểm", value: (classroom) => classroom.location },
     { label: "Sức chứa", value: (classroom) => `${classroom.capacity} học viên` },
+    {
+      label: "Giáo viên phụ trách",
+      value: (classroom) =>
+        classroom.teachers.length > 0
+          ? classroom.teachers.map((teacher) => teacher.name).join(", ")
+          : "Chưa phân công",
+    },
     { label: "Mã lớp", value: (classroom) => `#${classroom.id}` },
   ],
 }
