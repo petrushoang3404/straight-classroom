@@ -1,4 +1,4 @@
-.PHONY: start end be-dev be-test be-migrate be-migration be-fmt be-lint
+.PHONY: start end be-dev be-test be-migrate be-migration be-seed-user be-fmt be-lint
 
 start:
 	podman compose up -d
@@ -18,6 +18,10 @@ be-migrate:
 # Usage: make be-migration m="add foo column"
 be-migration:
 	cd backend && PYTHONPATH=.. uv run alembic revision --autogenerate -m "$(m)"
+
+# Usage: make be-seed-user u=admin p=secret d="Admin"
+be-seed-user:
+	cd backend && PYTHONPATH=.. uv run python -m backend.scripts.seed_user --username "$(u)" --password "$(p)" --display-name "$(d)"
 
 be-fmt:
 	cd backend && uv run ruff format .

@@ -8,9 +8,14 @@ from backend.schemas.students import (
     StudentsResponse,
     StudentUpdateRequest,
 )
+from backend.security import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-router = APIRouter(prefix="/students", tags=["students"])
+router = APIRouter(
+    prefix="/students",
+    tags=["students"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("/", response_model=StudentsResponse)

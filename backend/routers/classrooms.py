@@ -11,9 +11,14 @@ from backend.schemas.classrooms import (
 )
 from backend.schemas.students import StudentsResponse
 from backend.schemas.summaries import TeacherSummary
+from backend.security import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-router = APIRouter(prefix="/classrooms", tags=["classrooms"])
+router = APIRouter(
+    prefix="/classrooms",
+    tags=["classrooms"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("/", response_model=ClassroomsResponse)

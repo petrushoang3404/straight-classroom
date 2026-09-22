@@ -7,7 +7,23 @@ from sqlmodel import SQLModel, create_engine
 import backend.models.classroom_teachers
 import backend.models.classrooms
 import backend.models.students
-import backend.models.teachers  # noqa: F401
+import backend.models.teachers
+import backend.models.users  # noqa: F401
+from backend.models.users import User
+from backend.security import get_current_user
+
+
+def stub_user() -> User:
+    return User(id=1, username="tester", hashed_password="", display_name="Tester")
+
+
+def override_current_user(app):
+    """Bypass the classrooms/teachers/students auth dependency in tests.
+
+    Auth itself has its own dedicated tests (test_auth.py); resource tests
+    only care that a logged-in user can reach the endpoint.
+    """
+    app.dependency_overrides[get_current_user] = stub_user
 
 
 def create_test_engine():

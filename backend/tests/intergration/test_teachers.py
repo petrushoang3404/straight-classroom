@@ -8,7 +8,10 @@ from backend.models.classrooms import Classroom
 from backend.models.teachers import Teacher
 from backend.repository.database import get_session
 from backend.routers.teachers import router
-from backend.tests.intergration.conftest import create_test_engine
+from backend.tests.intergration.conftest import (
+    create_test_engine,
+    override_current_user,
+)
 
 
 @pytest.fixture
@@ -30,6 +33,7 @@ def client():
             yield session
 
     app = FastAPI()
+    override_current_user(app)
     app.include_router(router)
     app.dependency_overrides[get_session] = override_get_session
 
@@ -250,6 +254,7 @@ def client_with_classroom():
             yield session
 
     app = FastAPI()
+    override_current_user(app)
     app.include_router(router)
     app.dependency_overrides[get_session] = override_get_session
 

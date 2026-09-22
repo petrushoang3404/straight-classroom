@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     postgres_password: str
     postgres_db: str
 
+    # Defaulted so the app runs out of the box in dev; override in .env for
+    # anything that isn't a throwaway local database.
+    jwt_secret: str = "dev-secret-change-me"
+    jwt_expire_minutes: int = 60 * 24
+
     model_config = SettingsConfigDict(env_file=ENV_PATH, env_file_encoding="utf-8")
 
 

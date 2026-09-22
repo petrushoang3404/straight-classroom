@@ -17,7 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import backend.models.classroom_teachers
 import backend.models.classrooms
 import backend.models.students
-import backend.models.teachers  # noqa: F401
+import backend.models.teachers
+import backend.models.users  # noqa: F401
 from backend.repository.database import DATABASE_URL
 
 # this is the Alembic Config object, which provides

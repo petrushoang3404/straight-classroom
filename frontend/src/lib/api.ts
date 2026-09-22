@@ -1,6 +1,7 @@
 import axios from "axios"
 
 import type { AuthSession } from "./auth-store"
+import { useAuthStore } from "./auth-store"
 import type {
   Classroom,
   ClassroomSummary,
@@ -17,6 +18,32 @@ export const client = axios.create({
     "Content-Type": "application/json",
   },
 })
+
+// Attach the logged-in session's token to every request.
+client.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().session?.token
+  if (token) {
+    config.headers.set("Authorization", `Bearer ${token}`)
+  }
+  return config
+})
+
+// A 401 means the token is missing/expired/invalid -- drop the stale session
+// and send the user back to the login page, except when the 401 came from
+// the login call itself (that's just "wrong password", handled by the form).
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const isAuthRequest = error.config?.url?.startsWith("/auth/")
+    if (error.response?.status === 401 && !isAuthRequest) {
+      useAuthStore.getState().logout()
+      if (window.location.pathname !== "/login") {
+        window.location.assign("/login")
+      }
+    }
+    return Promise.reject(error)
+  }
+)
 
 if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCKS !== "false") {
   setupMockApi(client)
