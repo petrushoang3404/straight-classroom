@@ -8,6 +8,14 @@ import argparse
 
 from sqlmodel import Session
 
+# Importing the other model modules registers their tables on SQLModel's
+# metadata; without this, resolving User.teacher_id's foreign key (and
+# Teacher's relationships) fails since this script never loads them
+# otherwise (see backend/alembic/env.py for the same requirement).
+import backend.models.classroom_teachers  # noqa: F401
+import backend.models.classrooms  # noqa: F401
+import backend.models.students  # noqa: F401
+import backend.models.teachers  # noqa: F401
 from backend.models.users import User
 from backend.repository.database import engine
 from backend.repository.users import UserRepo
