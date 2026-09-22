@@ -68,6 +68,21 @@ def client():
 
 
 PHYSICS_101 = {"id": 1, "name": "Physics 101", "location": "Building A"}
+EXTRA_STUDENT_FIELDS = {
+    "date_of_birth": None,
+    "place_of_birth": None,
+    "date_of_baptism": None,
+    "place_of_baptism": None,
+    "date_of_first_communion": None,
+    "place_of_first_communion": None,
+    "date_of_confirmation": None,
+    "place_of_confirmation": None,
+    "father_name": None,
+    "father_phone_number": None,
+    "mother_name": None,
+    "mother_phone_number": None,
+    "address": None,
+}
 
 
 def test_get_students_returns_paginated_students(client):
@@ -84,6 +99,7 @@ def test_get_students_returns_paginated_students(client):
                 "division": "A",
                 "classroom_id": 1,
                 "classroom": PHYSICS_101,
+                **EXTRA_STUDENT_FIELDS,
             },
             {
                 "id": 3,
@@ -93,6 +109,7 @@ def test_get_students_returns_paginated_students(client):
                 "division": "B",
                 "classroom_id": 1,
                 "classroom": PHYSICS_101,
+                **EXTRA_STUDENT_FIELDS,
             },
         ],
         "limit": 2,
@@ -159,7 +176,12 @@ def test_create_student_returns_created_student(client):
 
     assert response.status_code == 201
     data = response.json()
-    assert data == {"id": 4, "classroom": PHYSICS_101, **payload}
+    assert data == {
+        "id": 4,
+        "classroom": PHYSICS_101,
+        **EXTRA_STUDENT_FIELDS,
+        **payload,
+    }
 
     get_response = client.get("/students/")
     assert get_response.status_code == 200
@@ -241,6 +263,7 @@ def test_get_student_by_id_returns_student(client):
         "division": "A",
         "classroom_id": 1,
         "classroom": PHYSICS_101,
+        **EXTRA_STUDENT_FIELDS,
     }
 
 
@@ -271,6 +294,7 @@ def test_update_student_updates_provided_fields(client):
         "division": "D",
         "classroom_id": 1,
         "classroom": PHYSICS_101,
+        **EXTRA_STUDENT_FIELDS,
     }
 
     get_response = client.get("/students/2")

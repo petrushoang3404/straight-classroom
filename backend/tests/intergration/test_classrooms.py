@@ -240,8 +240,8 @@ def client_with_relations():
         other_classroom = Classroom(
             name="Chemistry Lab", capacity=24, location="Building B"
         )
-        teacher = Teacher(name="Alice Smith", subject="Physics")
-        other_teacher = Teacher(name="Bob Jones", subject="Chemistry")
+        teacher = Teacher(name="Alice Smith", division="Physics")
+        other_teacher = Teacher(name="Bob Jones", division="Chemistry")
         session.add_all([classroom, other_classroom, teacher, other_teacher])
         session.commit()
         session.refresh(classroom)

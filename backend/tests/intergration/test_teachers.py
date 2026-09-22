@@ -21,9 +21,9 @@ def client():
     with Session(engine) as session:
         session.add_all(
             [
-                Teacher(name="Alice Smith", subject="Physics"),
-                Teacher(name="Bob Jones", subject="Chemistry"),
-                Teacher(name="Carol Brown", subject="History"),
+                Teacher(name="Alice Smith", division="Physics"),
+                Teacher(name="Bob Jones", division="Chemistry"),
+                Teacher(name="Carol Brown", division="History"),
             ]
         )
         session.commit()
@@ -43,18 +43,35 @@ def client():
     app.dependency_overrides.clear()
 
 
+EXTRA_TEACHER_FIELDS = {
+    "saint_name": None,
+    "date_of_birth": None,
+    "place_of_birth": None,
+    "feast_day": None,
+    "phone_number": None,
+    "address": None,
+}
+
+
 def test_get_teachers_returns_paginated_teachers(client):
     response = client.get("/teachers/", params={"limit": 2, "offset": 1})
 
     assert response.status_code == 200
     assert response.json() == {
         "items": [
-            {"id": 2, "name": "Bob Jones", "subject": "Chemistry", "classrooms": []},
+            {
+                "id": 2,
+                "name": "Bob Jones",
+                "division": "Chemistry",
+                "classrooms": [],
+                **EXTRA_TEACHER_FIELDS,
+            },
             {
                 "id": 3,
                 "name": "Carol Brown",
-                "subject": "History",
+                "division": "History",
                 "classrooms": [],
+                **EXTRA_TEACHER_FIELDS,
             },
         ],
         "limit": 2,
@@ -84,7 +101,13 @@ def test_get_teachers_filters_by_name(client):
     assert response.status_code == 200
     assert response.json() == {
         "items": [
-            {"id": 2, "name": "Bob Jones", "subject": "Chemistry", "classrooms": []}
+            {
+                "id": 2,
+                "name": "Bob Jones",
+                "division": "Chemistry",
+                "classrooms": [],
+                **EXTRA_TEACHER_FIELDS,
+            }
         ],
         "limit": 20,
         "offset": 0,
@@ -108,13 +131,18 @@ def test_get_teachers_validates_query_params(client, params):
 
 
 def test_create_teacher_returns_created_teacher(client):
-    payload = {"name": "David Wilson", "subject": "Mathematics"}
+    payload = {"name": "David Wilson", "division": "Mathematics"}
 
     response = client.post("/teachers/", json=payload)
 
     assert response.status_code == 201
     data = response.json()
-    assert data == {"id": 4, "classrooms": [], **payload}
+    assert data == {
+        "id": 4,
+        "classrooms": [],
+        **EXTRA_TEACHER_FIELDS,
+        **payload,
+    }
 
     get_response = client.get("/teachers/")
     assert get_response.status_code == 200
@@ -126,8 +154,8 @@ def test_create_teacher_returns_created_teacher(client):
 @pytest.mark.parametrize(
     "payload",
     [
-        {"name": "", "subject": "Mathematics"},
-        {"name": "David Wilson", "subject": ""},
+        {"name": "", "division": "Mathematics"},
+        {"name": "David Wilson", "division": ""},
     ],
 )
 def test_create_teacher_validates_payload(client, payload):
@@ -143,8 +171,9 @@ def test_get_teacher_by_id_returns_teacher(client):
     assert response.json() == {
         "id": 2,
         "name": "Bob Jones",
-        "subject": "Chemistry",
+        "division": "Chemistry",
         "classrooms": [],
+        **EXTRA_TEACHER_FIELDS,
     }
 
 
@@ -162,7 +191,7 @@ def test_get_teacher_by_id_validates_id(client):
 
 
 def test_update_teacher_updates_provided_fields(client):
-    payload = {"subject": "Advanced Chemistry"}
+    payload = {"division": "Advanced Chemistry"}
 
     response = client.patch("/teachers/2", json=payload)
 
@@ -170,8 +199,9 @@ def test_update_teacher_updates_provided_fields(client):
     assert response.json() == {
         "id": 2,
         "name": "Bob Jones",
-        "subject": "Advanced Chemistry",
+        "division": "Advanced Chemistry",
         "classrooms": [],
+        **EXTRA_TEACHER_FIELDS,
     }
 
     get_response = client.get("/teachers/2")
@@ -197,7 +227,7 @@ def test_update_teacher_rejects_empty_payload(client):
     "payload",
     [
         {"name": ""},
-        {"subject": ""},
+        {"division": ""},
     ],
 )
 def test_update_teacher_validates_payload(client, payload):
@@ -242,7 +272,7 @@ def client_with_classroom():
     engine = create_test_engine()
 
     with Session(engine) as session:
-        teacher = Teacher(name="Alice Smith", subject="Physics")
+        teacher = Teacher(name="Alice Smith", division="Physics")
         classroom = Classroom(name="Physics 101", capacity=30, location="Building A")
         session.add_all([teacher, classroom])
         session.commit()

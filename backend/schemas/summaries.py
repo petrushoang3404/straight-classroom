@@ -21,4 +21,4 @@ class TeacherSummary(BaseModel):
 
     id: int
     name: str
-    subject: str
+    division: str
