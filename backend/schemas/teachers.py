@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+from backend.schemas.summaries import ClassroomSummary
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TeacherCreateRequest(BaseModel):
@@ -12,9 +13,12 @@ class TeacherUpdateRequest(BaseModel):
 
 
 class TeacherResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     subject: str
+    classrooms: list[ClassroomSummary] = []
 
 
 class TeachersResponse(BaseModel):

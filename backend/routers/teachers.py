@@ -1,6 +1,8 @@
 from typing import Annotated
 
+from backend.repository.errors import NotFoundError
 from backend.repository.teachers import TeacherRepo
+from backend.schemas.summaries import ClassroomSummary
 from backend.schemas.teachers import (
     TeacherCreateRequest,
     TeacherResponse,
@@ -96,3 +98,17 @@ def delete_teacher(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Teacher not found",
         )
+
+
+@router.get("/{teacher_id}/classrooms", response_model=list[ClassroomSummary])
+def get_teacher_classrooms(
+    teacher_id: Annotated[int, Path(gt=0)],
+    repo: TeacherRepo = Depends(TeacherRepo),
+):
+    try:
+        return repo.list_classrooms(teacher_id)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc

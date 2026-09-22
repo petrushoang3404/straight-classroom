@@ -17,18 +17,21 @@ const config: ResourceConfig<Student> = {
   list: api.students.list,
   get: api.students.get,
   primary: fullName,
-  secondary: (student) => `${student.division} · Lớp #${student.classroom_id}`,
+  secondary: (student) => `${student.division} · ${student.classroom.name}`,
   badge: (student) => student.division,
   columns: [
     { label: "Ngành", value: (student) => student.division },
-    { label: "Lớp", value: (student) => `#${student.classroom_id}` },
+    { label: "Lớp", value: (student) => student.classroom.name },
   ],
   details: [
     { label: "Tên thánh", value: (student) => student.saint_name },
     { label: "Tên gọi", value: (student) => student.first_name },
     { label: "Họ", value: (student) => student.last_name },
     { label: "Ngành", value: (student) => student.division },
-    { label: "Lớp học", value: (student) => `#${student.classroom_id}` },
+    {
+      label: "Lớp học",
+      value: (student) => `${student.classroom.name} (${student.classroom.location})`,
+    },
     { label: "Mã học sinh", value: (student) => `#${student.id}` },
   ],
 }

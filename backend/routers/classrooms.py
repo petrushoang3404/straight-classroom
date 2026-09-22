@@ -1,12 +1,16 @@
 from typing import Annotated
 
 from backend.repository.classrooms import ClassroomRepo
+from backend.repository.errors import ConflictError, NotFoundError
 from backend.schemas.classrooms import (
     ClassroomCreateRequest,
     ClassroomResponse,
     ClassroomsResponse,
     ClassroomUpdateRequest,
+    TeacherAssignmentRequest,
 )
+from backend.schemas.students import StudentsResponse
+from backend.schemas.summaries import TeacherSummary
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 router = APIRouter(prefix="/classrooms", tags=["classrooms"])
@@ -80,3 +84,95 @@ def update_classroom(
             detail="Classroom not found",
         )
     return result
+
+
+@router.delete("/{classroom_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_classroom(
+    classroom_id: Annotated[int, Path(gt=0)],
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    try:
+        result = repo.delete(classroom_id)
+    except ConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Classroom not found",
+        )
+
+
+@router.get("/{classroom_id}/students", response_model=StudentsResponse)
+def get_classroom_students(
+    classroom_id: Annotated[int, Path(gt=0)],
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    try:
+        rows, total = repo.list_students(classroom_id, limit=limit, offset=offset)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    return StudentsResponse(items=rows, limit=limit, offset=offset, total=total)
+
+
+@router.get("/{classroom_id}/teachers", response_model=list[TeacherSummary])
+def get_classroom_teachers(
+    classroom_id: Annotated[int, Path(gt=0)],
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    try:
+        return repo.list_teachers(classroom_id)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+@router.post(
+    "/{classroom_id}/teachers",
+    response_model=ClassroomResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def assign_classroom_teacher(
+    classroom_id: Annotated[int, Path(gt=0)],
+    assignment: TeacherAssignmentRequest,
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    try:
+        return repo.assign_teacher(classroom_id, assignment.teacher_id)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+
+@router.delete(
+    "/{classroom_id}/teachers/{teacher_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def unassign_classroom_teacher(
+    classroom_id: Annotated[int, Path(gt=0)],
+    teacher_id: Annotated[int, Path(gt=0)],
+    repo: ClassroomRepo = Depends(ClassroomRepo),
+):
+    try:
+        repo.unassign_teacher(classroom_id, teacher_id)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc

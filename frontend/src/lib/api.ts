@@ -1,7 +1,14 @@
 import axios from "axios"
 
 import type { AuthSession } from "./auth-store"
-import type { Classroom, PaginatedResponse, Student, Teacher } from "./models"
+import type {
+  Classroom,
+  ClassroomSummary,
+  PaginatedResponse,
+  Student,
+  Teacher,
+  TeacherSummary,
+} from "./models"
 import { setupMockApi } from "./mock-api"
 
 export const client = axios.create({
@@ -19,6 +26,10 @@ type ListParams = {
   limit?: number
   offset?: number
   search?: string
+}
+
+type StudentListParams = ListParams & {
+  classroomId?: number
 }
 
 const listParams = (params: ListParams, searchKey?: string) => ({
@@ -71,6 +82,28 @@ export const api = {
       const response = await client.get<Classroom>(`/classrooms/${id}`)
       return response.data
     },
+    students: async (id: number, params: ListParams = {}) => {
+      const response = await client.get<PaginatedResponse<Student> | Student[]>(
+        `/classrooms/${id}/students`,
+        { params: listParams(params) }
+      )
+      return normalizeList(response.data, params)
+    },
+    teachers: async (id: number) => {
+      const response = await client.get<TeacherSummary[]>(
+        `/classrooms/${id}/teachers`
+      )
+      return response.data
+    },
+    assignTeacher: async (id: number, teacherId: number) => {
+      const response = await client.post<Classroom>(`/classrooms/${id}/teachers`, {
+        teacher_id: teacherId,
+      })
+      return response.data
+    },
+    unassignTeacher: async (id: number, teacherId: number) => {
+      await client.delete(`/classrooms/${id}/teachers/${teacherId}`)
+    },
   },
   teachers: {
     list: async (params: ListParams = {}) => {
@@ -84,12 +117,23 @@ export const api = {
       const response = await client.get<Teacher>(`/teachers/${id}`)
       return response.data
     },
+    classrooms: async (id: number) => {
+      const response = await client.get<ClassroomSummary[]>(
+        `/teachers/${id}/classrooms`
+      )
+      return response.data
+    },
   },
   students: {
-    list: async (params: ListParams = {}) => {
+    list: async ({ classroomId, ...params }: StudentListParams = {}) => {
       const response = await client.get<PaginatedResponse<Student> | Student[]>(
         "/students/",
-        { params: listParams(params, "student_name") }
+        {
+          params: {
+            ...listParams(params, "student_name"),
+            ...(classroomId ? { classroom_id: classroomId } : {}),
+          },
+        }
       )
       return normalizeList(response.data, params)
     },

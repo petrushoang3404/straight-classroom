@@ -1,26 +1,26 @@
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
 from backend.models.classrooms import Classroom
 from backend.models.students import Student
 from backend.repository.database import get_session
 from backend.routers.students import router
+from backend.tests.intergration.conftest import create_test_engine
 
 
 @pytest.fixture
 def client():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
+    engine = create_test_engine()
 
     with Session(engine) as session:
-        session.add(Classroom(name="Physics 101", capacity=30, location="Building A"))
+        session.add_all(
+            [
+                Classroom(name="Physics 101", capacity=30, location="Building A"),
+                Classroom(name="Chemistry Lab", capacity=24, location="Building B"),
+            ]
+        )
         session.commit()
         session.add_all(
             [
@@ -63,6 +63,9 @@ def client():
     app.dependency_overrides.clear()
 
 
+PHYSICS_101 = {"id": 1, "name": "Physics 101", "location": "Building A"}
+
+
 def test_get_students_returns_paginated_students(client):
     response = client.get("/students/", params={"limit": 2, "offset": 1})
 
@@ -76,6 +79,7 @@ def test_get_students_returns_paginated_students(client):
                 "last_name": "Doe",
                 "division": "A",
                 "classroom_id": 1,
+                "classroom": PHYSICS_101,
             },
             {
                 "id": 3,
@@ -84,6 +88,7 @@ def test_get_students_returns_paginated_students(client):
                 "last_name": "Smith",
                 "division": "B",
                 "classroom_id": 1,
+                "classroom": PHYSICS_101,
             },
         ],
         "limit": 2,
@@ -112,6 +117,15 @@ def test_get_students_filters_by_name(client):
     assert [item["first_name"] for item in data["items"]] == ["John", "Jane"]
 
 
+def test_get_students_filters_by_classroom_id(client):
+    response = client.get("/students/", params={"classroom_id": 2})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 0
+    assert data["items"] == []
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -119,6 +133,7 @@ def test_get_students_filters_by_name(client):
         {"limit": 101},
         {"offset": -1},
         {"student_name": ""},
+        {"classroom_id": 0},
     ],
 )
 def test_get_students_validates_query_params(client, params):
@@ -140,13 +155,28 @@ def test_create_student_returns_created_student(client):
 
     assert response.status_code == 201
     data = response.json()
-    assert data == {"id": 4, **payload}
+    assert data == {"id": 4, "classroom": PHYSICS_101, **payload}
 
     get_response = client.get("/students/")
     assert get_response.status_code == 200
     students = get_response.json()
     assert students["total"] == 4
     assert students["items"][-1] == data
+
+
+def test_create_student_returns_404_when_classroom_missing(client):
+    payload = {
+        "saint_name": "Joseph",
+        "first_name": "David",
+        "last_name": "Wilson",
+        "division": "C",
+        "classroom_id": 999,
+    }
+
+    response = client.post("/students/", json=payload)
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Classroom not found"}
 
 
 @pytest.mark.parametrize(
@@ -206,6 +236,7 @@ def test_get_student_by_id_returns_student(client):
         "last_name": "Doe",
         "division": "A",
         "classroom_id": 1,
+        "classroom": PHYSICS_101,
     }
 
 
@@ -235,11 +266,30 @@ def test_update_student_updates_provided_fields(client):
         "last_name": "Doe",
         "division": "D",
         "classroom_id": 1,
+        "classroom": PHYSICS_101,
     }
 
     get_response = client.get("/students/2")
     assert get_response.status_code == 200
     assert get_response.json() == response.json()
+
+
+def test_update_student_moves_to_another_classroom(client):
+    response = client.patch("/students/2", json={"classroom_id": 2})
+
+    assert response.status_code == 200
+    assert response.json()["classroom"] == {
+        "id": 2,
+        "name": "Chemistry Lab",
+        "location": "Building B",
+    }
+
+
+def test_update_student_returns_404_when_classroom_missing(client):
+    response = client.patch("/students/2", json={"classroom_id": 999})
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Classroom not found"}
 
 
 def test_update_student_returns_404_when_missing(client):

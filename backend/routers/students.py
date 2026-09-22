@@ -1,5 +1,6 @@
 from typing import Annotated
 
+from backend.repository.errors import NotFoundError
 from backend.repository.students import StudentRepo
 from backend.schemas.students import (
     StudentCreateRequest,
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/students", tags=["students"])
 @router.get("/", response_model=StudentsResponse)
 def get_students(
     student_name: Annotated[str | None, Query(min_length=1)] = None,
+    classroom_id: Annotated[int | None, Query(gt=0)] = None,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     repo: StudentRepo = Depends(StudentRepo),
@@ -26,6 +28,7 @@ def get_students(
         rows, total = repo.list(
             limit=limit,
             offset=offset,
+            classroom_id=classroom_id,
         )
     return StudentsResponse(
         items=rows,
@@ -58,7 +61,13 @@ def create_student(
     student: StudentCreateRequest,
     repo: StudentRepo = Depends(StudentRepo),
 ):
-    return repo.create(student.model_dump())
+    try:
+        return repo.create(student.model_dump())
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
 
 
 @router.patch(
@@ -76,10 +85,16 @@ def update_student(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No updates provided",
         )
-    result = repo.update(
-        student_id,
-        updates,
-    )
+    try:
+        result = repo.update(
+            student_id,
+            updates,
+        )
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

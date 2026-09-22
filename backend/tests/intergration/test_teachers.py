@@ -1,22 +1,19 @@
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
+from backend.models.classroom_teachers import ClassroomTeacher
+from backend.models.classrooms import Classroom
 from backend.models.teachers import Teacher
 from backend.repository.database import get_session
 from backend.routers.teachers import router
+from backend.tests.intergration.conftest import create_test_engine
 
 
 @pytest.fixture
 def client():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
+    engine = create_test_engine()
 
     with Session(engine) as session:
         session.add_all(
@@ -48,8 +45,13 @@ def test_get_teachers_returns_paginated_teachers(client):
     assert response.status_code == 200
     assert response.json() == {
         "items": [
-            {"id": 2, "name": "Bob Jones", "subject": "Chemistry"},
-            {"id": 3, "name": "Carol Brown", "subject": "History"},
+            {"id": 2, "name": "Bob Jones", "subject": "Chemistry", "classrooms": []},
+            {
+                "id": 3,
+                "name": "Carol Brown",
+                "subject": "History",
+                "classrooms": [],
+            },
         ],
         "limit": 2,
         "offset": 1,
@@ -77,7 +79,9 @@ def test_get_teachers_filters_by_name(client):
 
     assert response.status_code == 200
     assert response.json() == {
-        "items": [{"id": 2, "name": "Bob Jones", "subject": "Chemistry"}],
+        "items": [
+            {"id": 2, "name": "Bob Jones", "subject": "Chemistry", "classrooms": []}
+        ],
         "limit": 20,
         "offset": 0,
         "total": 1,
@@ -106,7 +110,7 @@ def test_create_teacher_returns_created_teacher(client):
 
     assert response.status_code == 201
     data = response.json()
-    assert data == {"id": 4, **payload}
+    assert data == {"id": 4, "classrooms": [], **payload}
 
     get_response = client.get("/teachers/")
     assert get_response.status_code == 200
@@ -136,6 +140,7 @@ def test_get_teacher_by_id_returns_teacher(client):
         "id": 2,
         "name": "Bob Jones",
         "subject": "Chemistry",
+        "classrooms": [],
     }
 
 
@@ -162,6 +167,7 @@ def test_update_teacher_updates_provided_fields(client):
         "id": 2,
         "name": "Bob Jones",
         "subject": "Advanced Chemistry",
+        "classrooms": [],
     }
 
     get_response = client.get("/teachers/2")
@@ -218,3 +224,50 @@ def test_delete_teacher_validates_id(client):
     response = client.delete("/teachers/0")
 
     assert response.status_code == 422
+
+
+def test_get_teacher_classrooms_returns_404_when_missing(client):
+    response = client.get("/teachers/999/classrooms")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Teacher not found"}
+
+
+@pytest.fixture
+def client_with_classroom():
+    engine = create_test_engine()
+
+    with Session(engine) as session:
+        teacher = Teacher(name="Alice Smith", subject="Physics")
+        classroom = Classroom(name="Physics 101", capacity=30, location="Building A")
+        session.add_all([teacher, classroom])
+        session.commit()
+        session.add(ClassroomTeacher(classroom_id=classroom.id, teacher_id=teacher.id))
+        session.commit()
+
+    def override_get_session():
+        with Session(engine) as session:
+            yield session
+
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_session] = override_get_session
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
+
+
+def test_get_teacher_classrooms_lists_assigned_classroom(client_with_classroom):
+    response = client_with_classroom.get("/teachers/1/classrooms")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"id": 1, "name": "Physics 101", "location": "Building A"}
+    ]
+
+    teacher_response = client_with_classroom.get("/teachers/1")
+    assert teacher_response.json()["classrooms"] == [
+        {"id": 1, "name": "Physics 101", "location": "Building A"}
+    ]
