@@ -22,4 +22,5 @@ def login(
         username=user.username,
         display_name=user.display_name,
         provider="password",
+        role=user.role,
     )

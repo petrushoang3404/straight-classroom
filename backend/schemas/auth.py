@@ -15,3 +15,4 @@ class AuthSessionResponse(BaseModel):
     username: str
     display_name: str = Field(alias="displayName")
     provider: Literal["password", "google"]
+    role: Literal["admin", "teacher"]

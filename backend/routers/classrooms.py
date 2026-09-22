@@ -11,7 +11,7 @@ from backend.schemas.classrooms import (
 )
 from backend.schemas.students import StudentsResponse
 from backend.schemas.summaries import TeacherSummary
-from backend.security import get_current_user
+from backend.security import get_current_user, require_admin, require_classroom_access
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 router = APIRouter(
@@ -57,6 +57,7 @@ def get_classroom(
     "/",
     response_model=ClassroomResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
 )
 def create_classroom(
     classroom: ClassroomCreateRequest,
@@ -65,7 +66,11 @@ def create_classroom(
     return repo.create(classroom.model_dump())
 
 
-@router.patch("/{classroom_id}", response_model=ClassroomResponse)
+@router.patch(
+    "/{classroom_id}",
+    response_model=ClassroomResponse,
+    dependencies=[Depends(require_classroom_access)],
+)
 def update_classroom(
     classroom_id: Annotated[int, Path(gt=0)],
     classroom: ClassroomUpdateRequest,
@@ -91,7 +96,11 @@ def update_classroom(
     return result
 
 
-@router.delete("/{classroom_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{classroom_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_classroom_access)],
+)
 def delete_classroom(
     classroom_id: Annotated[int, Path(gt=0)],
     repo: ClassroomRepo = Depends(ClassroomRepo),
@@ -110,7 +119,11 @@ def delete_classroom(
         )
 
 
-@router.get("/{classroom_id}/students", response_model=StudentsResponse)
+@router.get(
+    "/{classroom_id}/students",
+    response_model=StudentsResponse,
+    dependencies=[Depends(require_classroom_access)],
+)
 def get_classroom_students(
     classroom_id: Annotated[int, Path(gt=0)],
     limit: int = Query(default=20, ge=1, le=100),
@@ -145,6 +158,7 @@ def get_classroom_teachers(
     "/{classroom_id}/teachers",
     response_model=ClassroomResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_classroom_access)],
 )
 def assign_classroom_teacher(
     classroom_id: Annotated[int, Path(gt=0)],
@@ -168,6 +182,7 @@ def assign_classroom_teacher(
 @router.delete(
     "/{classroom_id}/teachers/{teacher_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_classroom_access)],
 )
 def unassign_classroom_teacher(
     classroom_id: Annotated[int, Path(gt=0)],

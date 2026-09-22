@@ -9,13 +9,13 @@ from backend.schemas.teachers import (
     TeachersResponse,
     TeacherUpdateRequest,
 )
-from backend.security import get_current_user
+from backend.security import require_admin
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 router = APIRouter(
     prefix="/teachers",
     tags=["teachers"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_admin)],
 )
 
 

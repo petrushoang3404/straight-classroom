@@ -6,3 +6,10 @@ class User(SQLModel, table=True):
     username: str = Field(max_length=255, unique=True, index=True)
     hashed_password: str
     display_name: str = Field(max_length=255)
+    role: str = Field(default="admin", max_length=50)
+    teacher_id: int | None = Field(
+        default=None,
+        foreign_key="teacher.id",
+        unique=True,
+        ondelete="SET NULL",
+    )

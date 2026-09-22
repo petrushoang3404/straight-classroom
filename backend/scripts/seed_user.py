@@ -19,6 +19,14 @@ def main():
     parser.add_argument("--username", "-u", required=True)
     parser.add_argument("--password", "-p", required=True)
     parser.add_argument("--display-name", "-d", default="")
+    parser.add_argument("--role", choices=["admin", "teacher"], default="admin")
+    parser.add_argument(
+        "--teacher-id",
+        type=int,
+        default=None,
+        help="Teacher record to link this account to (required for role=teacher "
+        "to have any classroom/student access)",
+    )
     args = parser.parse_args()
 
     with Session(engine) as session:
@@ -30,6 +38,8 @@ def main():
             user.hashed_password = hashed_password
             if args.display_name:
                 user.display_name = args.display_name
+            user.role = args.role
+            user.teacher_id = args.teacher_id
             session.add(user)
             session.commit()
             print(f"Updated password for existing user '{args.username}'.")
@@ -39,6 +49,8 @@ def main():
                     username=args.username,
                     hashed_password=hashed_password,
                     display_name=args.display_name or args.username,
+                    role=args.role,
+                    teacher_id=args.teacher_id,
                 )
             )
             session.commit()

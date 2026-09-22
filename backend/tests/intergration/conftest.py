@@ -14,7 +14,24 @@ from backend.security import get_current_user
 
 
 def stub_user() -> User:
-    return User(id=1, username="tester", hashed_password="", display_name="Tester")
+    return User(
+        id=1,
+        username="tester",
+        hashed_password="",
+        display_name="Tester",
+        role="admin",
+    )
+
+
+def stub_teacher_user(teacher_id: int | None) -> User:
+    return User(
+        id=2,
+        username="teacher",
+        hashed_password="",
+        display_name="Teacher",
+        role="teacher",
+        teacher_id=teacher_id,
+    )
 
 
 def override_current_user(app):
@@ -24,6 +41,10 @@ def override_current_user(app):
     only care that a logged-in user can reach the endpoint.
     """
     app.dependency_overrides[get_current_user] = stub_user
+
+
+def override_current_user_as(app, user: User):
+    app.dependency_overrides[get_current_user] = lambda: user
 
 
 def create_test_engine():

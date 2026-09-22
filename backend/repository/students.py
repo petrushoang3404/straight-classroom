@@ -15,22 +15,30 @@ class StudentRepo:
     def get_by_id(self, student_id: int):
         return self.session.get(Student, student_id)
 
-    def get_by_name(self, name: str, limit: int, offset: int):
+    def get_by_name(
+        self,
+        name: str,
+        limit: int,
+        offset: int,
+        *,
+        classroom_ids: list[int] | None = None,
+    ):
+        statement = select(Student).where(
+            (Student.first_name == name) | (Student.last_name == name)
+        )
+        if classroom_ids is not None:
+            statement = statement.where(Student.classroom_id.in_(classroom_ids))
         return self.session.exec(
-            select(Student)
-            .where((Student.first_name == name) | (Student.last_name == name))
-            .order_by(Student.id)
-            .limit(limit)
-            .offset(offset)
+            statement.order_by(Student.id).limit(limit).offset(offset)
         ).all()
 
-    def list(self, *, limit: int, offset: int, classroom_id: int | None = None):
+    def list(self, *, limit: int, offset: int, classroom_ids: list[int] | None = None):
         statement = select(Student)
         count_statement = select(func.count()).select_from(Student)
-        if classroom_id is not None:
-            statement = statement.where(Student.classroom_id == classroom_id)
+        if classroom_ids is not None:
+            statement = statement.where(Student.classroom_id.in_(classroom_ids))
             count_statement = count_statement.where(
-                Student.classroom_id == classroom_id
+                Student.classroom_id.in_(classroom_ids)
             )
 
         rows = self.session.exec(
