@@ -13,8 +13,40 @@ import type {
 } from "./models"
 
 type ClassroomBase = Omit<Classroom, "teachers">
-type TeacherBase = Omit<Teacher, "classrooms">
-type StudentBase = Omit<Student, "classroom">
+type TeacherBase = Pick<Teacher, "id" | "name" | "division"> &
+  Partial<
+    Pick<
+      Teacher,
+      | "saint_name"
+      | "date_of_birth"
+      | "place_of_birth"
+      | "feast_day"
+      | "phone_number"
+      | "address"
+    >
+  >
+type StudentBase = Pick<
+  Student,
+  "id" | "saint_name" | "first_name" | "last_name" | "division" | "classroom_id"
+> &
+  Partial<
+    Pick<
+      Student,
+      | "date_of_birth"
+      | "place_of_birth"
+      | "date_of_baptism"
+      | "place_of_baptism"
+      | "date_of_first_communion"
+      | "place_of_first_communion"
+      | "date_of_confirmation"
+      | "place_of_confirmation"
+      | "father_name"
+      | "father_phone_number"
+      | "mother_name"
+      | "mother_phone_number"
+      | "address"
+    >
+  >
 
 const classroomsBase: ClassroomBase[] = [
   { id: 1, name: "Khai Tâm A", capacity: 28, location: "Phòng Gioan" },
@@ -24,7 +56,17 @@ const classroomsBase: ClassroomBase[] = [
 ]
 
 const teachersBase: TeacherBase[] = [
-  { id: 1, name: "Anna Nguyễn Minh", division: "Giáo lý căn bản" },
+  {
+    id: 1,
+    name: "Anna Nguyễn Minh",
+    division: "Giáo lý căn bản",
+    saint_name: "Anna",
+    date_of_birth: "1991-03-12",
+    place_of_birth: "TP. Hồ Chí Minh",
+    feast_day: "26/07",
+    phone_number: "090 123 45 67",
+    address: "12 Nguyễn Văn Trỗi, Phường 7, Quận 3, TP. Hồ Chí Minh",
+  },
   { id: 2, name: "Phêrô Trần Hoàng", division: "Kinh Thánh" },
   { id: 3, name: "Maria Lê Hạnh", division: "Phụng vụ" },
   { id: 4, name: "Giuse Phạm Quốc", division: "Sinh hoạt thiếu nhi" },
@@ -47,6 +89,19 @@ const studentsBase: StudentBase[] = [
     last_name: "Nguyễn",
     division: "Ấu nhi",
     classroom_id: 1,
+    date_of_birth: "2017-05-14",
+    place_of_birth: "TP. Hồ Chí Minh",
+    date_of_baptism: "2017-12-17",
+    place_of_baptism: "Nhà thờ Chúa Thánh Thể",
+    date_of_first_communion: "2024-04-21",
+    place_of_first_communion: "Nhà thờ Chúa Thánh Thể",
+    date_of_confirmation: null,
+    place_of_confirmation: null,
+    father_name: "Nguyễn Văn An",
+    father_phone_number: "090 234 56 78",
+    mother_name: "Trần Thị Bích",
+    mother_phone_number: "091 345 67 89",
+    address: "45 Nguyễn Đình Chiểu, Phường 5, Quận 3, TP. Hồ Chí Minh",
   },
   {
     id: 2,
@@ -99,6 +154,12 @@ function getClassrooms(): Classroom[] {
 
 function getTeachers(): Teacher[] {
   return teachersBase.map((teacher) => ({
+    saint_name: null,
+    date_of_birth: null,
+    place_of_birth: null,
+    feast_day: null,
+    phone_number: null,
+    address: null,
     ...teacher,
     classrooms: assignments
       .filter((link) => link.teacherId === teacher.id)
@@ -108,6 +169,19 @@ function getTeachers(): Teacher[] {
 
 function getStudents(): Student[] {
   return studentsBase.map((student) => ({
+    date_of_birth: null,
+    place_of_birth: null,
+    date_of_baptism: null,
+    place_of_baptism: null,
+    date_of_first_communion: null,
+    place_of_first_communion: null,
+    date_of_confirmation: null,
+    place_of_confirmation: null,
+    father_name: null,
+    father_phone_number: null,
+    mother_name: null,
+    mother_phone_number: null,
+    address: null,
     ...student,
     classroom: classroomSummary(student.classroom_id),
   }))

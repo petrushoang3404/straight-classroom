@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react"
 import {
-  ArrowLeft,
+  useEffect,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react"
+import {
   ChevronRight,
-  Pencil,
   Plus,
   Search,
   ShieldCheck,
@@ -10,6 +13,10 @@ import {
 import type { FieldValues } from "react-hook-form"
 import { useNavigate } from "react-router"
 
+import {
+  DetailErrorState,
+  DetailPageSkeleton,
+} from "@/components/detail-ui"
 import type { ResourceFormProps } from "@/components/resource-form-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,10 +40,6 @@ export type ResourceConfig<T extends { id: number }, TValues extends FieldValues
     createLabel: string
   }
   columns: Array<{
-    label: string
-    value: (item: T) => string
-  }>
-  details: Array<{
     label: string
     value: (item: T) => string
   }>
@@ -226,7 +229,15 @@ export function ResourceList<
 export function ResourceDetail<
   T extends { id: number },
   TValues extends FieldValues,
->({ config, id }: { config: ResourceConfig<T, TValues>; id: number }) {
+>({
+  children,
+  config,
+  id,
+}: {
+  children: (item: T, actions: { onEdit: () => void }) => ReactNode
+  config: ResourceConfig<T, TValues>
+  id: number
+}) {
   const navigate = useNavigate()
   const [item, setItem] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
@@ -235,87 +246,52 @@ export function ResourceDetail<
   const FormComponent = config.form.component
 
   useEffect(() => {
+    let active = true
+
     setLoading(true)
     setError("")
     setItem(null)
     config
       .get(id)
-      .then(setItem)
+      .then((response) => {
+        if (active) setItem(response)
+      })
       .catch(() => {
+        if (!active) return
         setError("Không tìm thấy hồ sơ hoặc API chưa sẵn sàng.")
         toast.error(
           "Không thể mở hồ sơ",
           `${config.singular} #${id} không tồn tại hoặc API chưa sẵn sàng.`
         )
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
   }, [config, id])
 
-  const badge = useMemo(() => (item ? config.badge?.(item) : undefined), [
-    config,
-    item,
-  ])
+  if (loading) {
+    return <DetailPageSkeleton />
+  }
+
+  if (error || !item) {
+    return (
+      <DetailErrorState
+        description={error || "Không có dữ liệu để hiển thị."}
+        onBack={() => navigate(config.basePath)}
+        title="Không thể mở hồ sơ"
+      />
+    )
+  }
 
   return (
-    <section className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
-        <Button
-          onClick={() => navigate(config.basePath)}
-          size="sm"
-          variant="outline"
-        >
-          <ArrowLeft />
-          Quay lại
-        </Button>
-        {item ? (
-          <Button onClick={() => setEditor({ mode: "update", item })} size="sm">
-            <Pencil />
-            Chỉnh sửa
-          </Button>
-        ) : null}
-      </div>
-
-      {loading ? (
-        <DetailSkeleton />
-      ) : error || !item ? (
-        <StateText text={error || "Không có dữ liệu."} />
-      ) : (
-        <>
-          <div className="rounded-lg border bg-card p-5 shadow-xs">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  {config.singular} #{item.id}
-                </p>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-                  {config.primary(item)}
-                </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {config.secondary(item)}
-                </p>
-              </div>
-              {badge ? (
-                <span className="w-fit rounded-md border bg-accent px-2.5 py-1 text-sm font-medium text-accent-foreground">
-                  {badge}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            {config.details.map((detail) => (
-              <div className="rounded-lg border bg-card p-4 shadow-xs" key={detail.label}>
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {detail.label}
-                </div>
-                <div className="mt-2 text-sm font-medium leading-6">
-                  {detail.value(item)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+    <>
+      {children(item, {
+        onEdit: () => setEditor({ mode: "update", item }),
+      })}
 
       {editor ? (
         <FormComponent
@@ -335,7 +311,7 @@ export function ResourceDetail<
           }
         />
       ) : null}
-    </section>
+    </>
   )
 }
 
@@ -353,18 +329,6 @@ function TableSkeleton() {
           <Skeleton className="h-4" />
         </div>
       ))}
-    </div>
-  )
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="grid gap-4">
-      <Skeleton className="h-28 rounded-lg" />
-      <div className="grid gap-4 md:grid-cols-2">
-        <Skeleton className="h-24 rounded-lg" />
-        <Skeleton className="h-24 rounded-lg" />
-      </div>
     </div>
   )
 }

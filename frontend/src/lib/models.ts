@@ -30,6 +30,12 @@ export type Teacher = {
   name: string
   division: string
   classrooms: ClassroomSummary[]
+  saint_name: string | null
+  date_of_birth: string | null
+  place_of_birth: string | null
+  feast_day: string | null
+  phone_number: string | null
+  address: string | null
 }
 
 export type Student = {
@@ -40,6 +46,19 @@ export type Student = {
   division: string
   classroom_id: number
   classroom: ClassroomSummary
+  date_of_birth: string | null
+  place_of_birth: string | null
+  date_of_baptism: string | null
+  place_of_baptism: string | null
+  date_of_first_communion: string | null
+  place_of_first_communion: string | null
+  date_of_confirmation: string | null
+  place_of_confirmation: string | null
+  father_name: string | null
+  father_phone_number: string | null
+  mother_name: string | null
+  mother_phone_number: string | null
+  address: string | null
 }
 
 export type ClassroomInput = Pick<Classroom, "name" | "capacity" | "location">
