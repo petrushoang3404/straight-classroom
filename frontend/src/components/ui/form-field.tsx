@@ -19,11 +19,11 @@ function FormField({
   label,
   required = false,
 }: FormFieldProps) {
-  const descriptionId = description ? `${htmlFor}-description` : undefined
-  const errorId = error ? `${htmlFor}-error` : undefined
+  const feedback = error || description
+  const feedbackId = feedback ? `${htmlFor}-feedback` : undefined
 
   return (
-    <div className="grid gap-2">
+    <div className="grid self-start gap-2">
       <label className="flex items-center gap-1 text-sm font-medium" htmlFor={htmlFor}>
         {label}
         {required ? (
@@ -33,17 +33,16 @@ function FormField({
         ) : null}
       </label>
       {children}
-      {description ? (
-        <p className="text-xs leading-5 text-muted-foreground" id={descriptionId}>
-          {description}
-        </p>
-      ) : null}
       <p
-        className={cn("text-xs leading-5 text-destructive", !error && "hidden")}
-        id={errorId}
-        role="alert"
+        aria-live="polite"
+        className={cn(
+          "min-h-5 text-xs leading-5",
+          error ? "text-destructive" : "text-muted-foreground"
+        )}
+        id={feedbackId}
+        role={error ? "alert" : undefined}
       >
-        {error || "Invalid value"}
+        {feedback || "\u00a0"}
       </p>
     </div>
   )
@@ -71,12 +70,7 @@ function FormSection({ children, description, title }: FormSectionProps) {
 
 function fieldAccessibility(id: string, error?: string, description?: string) {
   return {
-    "aria-describedby": [
-      description ? `${id}-description` : null,
-      error ? `${id}-error` : null,
-    ]
-      .filter(Boolean)
-      .join(" ") || undefined,
+    "aria-describedby": error || description ? `${id}-feedback` : undefined,
     "aria-invalid": error ? (true as const) : undefined,
   }
 }

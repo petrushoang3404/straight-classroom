@@ -206,7 +206,7 @@ function AppLayout() {
       </Sidebar>
 
       <SidebarInset>
-        <header className="relative flex h-16 shrink-0 items-center gap-3 bg-background/95 px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-sidebar-border">
+        <header className="flex h-16 shrink-0 items-center gap-3 bg-background/95 px-4">
           <SidebarTrigger />
           <div className="min-w-0">
             <h1 className="truncate text-base font-semibold">
@@ -217,6 +217,8 @@ function AppLayout() {
             </p>
           </div>
         </header>
+
+        <div aria-hidden="true" className="h-px shrink-0 bg-sidebar-border" />
 
         <main className="flex flex-1 flex-col p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">
