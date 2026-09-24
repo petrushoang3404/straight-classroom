@@ -37,6 +37,7 @@ import {
 import { toast } from "@/components/ui/toast"
 import { ClassroomDetail, ClassroomsList } from "@/components/classrooms"
 import { LoginPage } from "@/components/login"
+import { NotFoundPage } from "@/components/not-found"
 import { StudentDetail, StudentsList } from "@/components/students"
 import { TeacherDetail, TeachersList } from "@/components/teachers"
 import { UserAvatar } from "@/components/user-avatar"
@@ -78,6 +79,7 @@ function App() {
   return (
     <Routes>
       <Route element={<PublicRoute />} path="/login" />
+      <Route element={<NotFoundPage />} path="*" />
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route element={<Navigate replace to="/classrooms" />} index />
@@ -87,7 +89,6 @@ function App() {
           <Route element={<TeacherDetailRoute />} path="teachers/:id" />
           <Route element={<StudentsList />} path="students" />
           <Route element={<StudentDetailRoute />} path="students/:id" />
-          <Route element={<Navigate replace to="/classrooms" />} path="*" />
         </Route>
       </Route>
     </Routes>
@@ -230,17 +231,17 @@ function AppLayout() {
 
 function ClassroomDetailRoute() {
   const id = usePositiveId()
-  return id ? <ClassroomDetail id={id} /> : <Navigate replace to="/classrooms" />
+  return id ? <ClassroomDetail id={id} /> : <NotFoundPage embedded />
 }
 
 function TeacherDetailRoute() {
   const id = usePositiveId()
-  return id ? <TeacherDetail id={id} /> : <Navigate replace to="/teachers" />
+  return id ? <TeacherDetail id={id} /> : <NotFoundPage embedded />
 }
 
 function StudentDetailRoute() {
   const id = usePositiveId()
-  return id ? <StudentDetail id={id} /> : <Navigate replace to="/students" />
+  return id ? <StudentDetail id={id} /> : <NotFoundPage embedded />
 }
 
 function usePositiveId() {
