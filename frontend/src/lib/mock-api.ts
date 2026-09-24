@@ -3,9 +3,12 @@ import MockAdapter from "axios-mock-adapter"
 
 import type {
   Classroom,
+  ClassroomInput,
   ClassroomSummary,
   Student,
+  StudentInput,
   Teacher,
+  TeacherInput,
   TeacherSummary,
 } from "./models"
 
@@ -21,10 +24,10 @@ const classroomsBase: ClassroomBase[] = [
 ]
 
 const teachersBase: TeacherBase[] = [
-  { id: 1, name: "Anna Nguyễn Minh", subject: "Giáo lý căn bản" },
-  { id: 2, name: "Phêrô Trần Hoàng", subject: "Kinh Thánh" },
-  { id: 3, name: "Maria Lê Hạnh", subject: "Phụng vụ" },
-  { id: 4, name: "Giuse Phạm Quốc", subject: "Sinh hoạt thiếu nhi" },
+  { id: 1, name: "Anna Nguyễn Minh", division: "Giáo lý căn bản" },
+  { id: 2, name: "Phêrô Trần Hoàng", division: "Kinh Thánh" },
+  { id: 3, name: "Maria Lê Hạnh", division: "Phụng vụ" },
+  { id: 4, name: "Giuse Phạm Quốc", division: "Sinh hoạt thiếu nhi" },
 ]
 
 // Many-to-many classroom <-> teacher assignments, mutated by the assign/unassign mocks.
@@ -81,8 +84,8 @@ function classroomSummary(classroomId: number): ClassroomSummary {
 function teacherSummary(teacherId: number): TeacherSummary {
   const teacher = teachersBase.find((item) => item.id === teacherId)
   return teacher
-    ? { id: teacher.id, name: teacher.name, subject: teacher.subject }
-    : { id: teacherId, name: "Không rõ", subject: "—" }
+    ? { id: teacher.id, name: teacher.name, division: teacher.division }
+    : { id: teacherId, name: "Không rõ", division: "—" }
 }
 
 function getClassrooms(): Classroom[] {
@@ -108,6 +111,74 @@ function getStudents(): Student[] {
     ...student,
     classroom: classroomSummary(student.classroom_id),
   }))
+}
+
+function getClassroom(id: number): Classroom {
+  const classroom = getClassrooms().find((item) => item.id === id)
+  if (!classroom) throw new Error(`Mock classroom ${id} not found`)
+  return classroom
+}
+
+function getTeacher(id: number): Teacher {
+  const teacher = getTeachers().find((item) => item.id === id)
+  if (!teacher) throw new Error(`Mock teacher ${id} not found`)
+  return teacher
+}
+
+function getStudent(id: number): Student {
+  const student = getStudents().find((item) => item.id === id)
+  if (!student) throw new Error(`Mock student ${id} not found`)
+  return student
+}
+
+function requestPayload<T>(data: unknown): T {
+  if (typeof data === "object" && data !== null) {
+    return data as T
+  }
+
+  if (typeof data !== "string" || !data) {
+    return {} as T
+  }
+
+  try {
+    return JSON.parse(data) as T
+  } catch {
+    return {} as T
+  }
+}
+
+function isRequiredString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= 255
+}
+
+function isValidClassroom(value: Partial<ClassroomBase>): value is ClassroomBase {
+  return (
+    isRequiredString(value.name) &&
+    isRequiredString(value.location) &&
+    typeof value.capacity === "number" &&
+    Number.isInteger(value.capacity) &&
+    value.capacity > 0
+  )
+}
+
+function isValidTeacher(value: Partial<TeacherBase>): value is TeacherBase {
+  return isRequiredString(value.name) && isRequiredString(value.division)
+}
+
+function isValidStudent(value: Partial<StudentBase>): value is StudentBase {
+  return (
+    isRequiredString(value.saint_name) &&
+    isRequiredString(value.first_name) &&
+    isRequiredString(value.last_name) &&
+    isRequiredString(value.division) &&
+    typeof value.classroom_id === "number" &&
+    Number.isInteger(value.classroom_id) &&
+    value.classroom_id > 0
+  )
+}
+
+function nextId(rows: Array<{ id: number }>) {
+  return Math.max(0, ...rows.map(({ id }) => id)) + 1
 }
 
 export function setupMockApi(client: AxiosInstance) {
@@ -148,6 +219,49 @@ export function setupMockApi(client: AxiosInstance) {
   })
   mock.onGet(/\/classrooms\/\d+$/).reply((config) => {
     return itemResponse(getClassrooms(), config.url)
+  })
+  mock.onPost("/classrooms/").reply((config) => {
+    const payload = requestPayload<ClassroomInput>(config.data)
+    if (!isValidClassroom(payload)) {
+      return [422, { detail: "Invalid classroom data" }]
+    }
+
+    const classroom: ClassroomBase = {
+      id: nextId(classroomsBase),
+      name: payload.name,
+      capacity: payload.capacity,
+      location: payload.location,
+    }
+    classroomsBase.push(classroom)
+    return [201, getClassroom(classroom.id)]
+  })
+  mock.onPatch(/\/classrooms\/\d+$/).reply((config) => {
+    const classroomId = idFromUrl(config.url, -1)
+    const classroomIndex = classroomsBase.findIndex(
+      (classroom) => classroom.id === classroomId
+    )
+    if (classroomIndex === -1) {
+      return [404, { detail: "Classroom not found" }]
+    }
+
+    const payload = requestPayload<Partial<ClassroomInput>>(config.data)
+    if (Object.keys(payload).length === 0) {
+      return [400, { detail: "At least one field must be provided" }]
+    }
+
+    const current = classroomsBase[classroomIndex]
+    const updated: ClassroomBase = {
+      ...current,
+      ...(payload.name !== undefined ? { name: payload.name } : {}),
+      ...(payload.capacity !== undefined ? { capacity: payload.capacity } : {}),
+      ...(payload.location !== undefined ? { location: payload.location } : {}),
+    }
+    if (!isValidClassroom(updated)) {
+      return [422, { detail: "Invalid classroom data" }]
+    }
+
+    classroomsBase[classroomIndex] = updated
+    return [200, getClassroom(updated.id)]
   })
   mock.onGet(/\/classrooms\/\d+\/students$/).reply((config) => {
     const classroomId = idFromUrl(config.url, -2)
@@ -207,6 +321,45 @@ export function setupMockApi(client: AxiosInstance) {
   mock.onGet(/\/teachers\/\d+$/).reply((config) => {
     return itemResponse(getTeachers(), config.url)
   })
+  mock.onPost("/teachers/").reply((config) => {
+    const payload = requestPayload<TeacherInput>(config.data)
+    if (!isValidTeacher(payload)) {
+      return [422, { detail: "Invalid teacher data" }]
+    }
+
+    const teacher: TeacherBase = {
+      id: nextId(teachersBase),
+      name: payload.name,
+      division: payload.division,
+    }
+    teachersBase.push(teacher)
+    return [201, getTeacher(teacher.id)]
+  })
+  mock.onPatch(/\/teachers\/\d+$/).reply((config) => {
+    const teacherId = idFromUrl(config.url, -1)
+    const teacherIndex = teachersBase.findIndex((teacher) => teacher.id === teacherId)
+    if (teacherIndex === -1) {
+      return [404, { detail: "Teacher not found" }]
+    }
+
+    const payload = requestPayload<Partial<TeacherInput>>(config.data)
+    if (Object.keys(payload).length === 0) {
+      return [400, { detail: "No updates provided" }]
+    }
+
+    const current = teachersBase[teacherIndex]
+    const updated: TeacherBase = {
+      ...current,
+      ...(payload.name !== undefined ? { name: payload.name } : {}),
+      ...(payload.division !== undefined ? { division: payload.division } : {}),
+    }
+    if (!isValidTeacher(updated)) {
+      return [422, { detail: "Invalid teacher data" }]
+    }
+
+    teachersBase[teacherIndex] = updated
+    return [200, getTeacher(updated.id)]
+  })
   mock.onGet(/\/teachers\/\d+\/classrooms$/).reply((config) => {
     const teacherId = idFromUrl(config.url, -2)
     const teacher = getTeachers().find((item) => item.id === teacherId)
@@ -225,6 +378,56 @@ export function setupMockApi(client: AxiosInstance) {
   })
   mock.onGet(/\/students\/\d+$/).reply((config) => {
     return itemResponse(getStudents(), config.url)
+  })
+  mock.onPost("/students/").reply((config) => {
+    const payload = requestPayload<StudentInput>(config.data)
+    if (!isValidStudent(payload) || !classroomsBase.some((item) => item.id === payload.classroom_id)) {
+      return [422, { detail: "Invalid student data" }]
+    }
+
+    const student: StudentBase = {
+      id: nextId(studentsBase),
+      saint_name: payload.saint_name,
+      first_name: payload.first_name,
+      last_name: payload.last_name,
+      division: payload.division,
+      classroom_id: payload.classroom_id,
+    }
+    studentsBase.push(student)
+    return [201, getStudent(student.id)]
+  })
+  mock.onPatch(/\/students\/\d+$/).reply((config) => {
+    const studentId = idFromUrl(config.url, -1)
+    const studentIndex = studentsBase.findIndex((student) => student.id === studentId)
+    if (studentIndex === -1) {
+      return [404, { detail: "Student not found" }]
+    }
+
+    const payload = requestPayload<Partial<StudentInput>>(config.data)
+    if (Object.keys(payload).length === 0) {
+      return [400, { detail: "No updates provided" }]
+    }
+
+    const current = studentsBase[studentIndex]
+    const updated: StudentBase = {
+      ...current,
+      ...(payload.saint_name !== undefined ? { saint_name: payload.saint_name } : {}),
+      ...(payload.first_name !== undefined ? { first_name: payload.first_name } : {}),
+      ...(payload.last_name !== undefined ? { last_name: payload.last_name } : {}),
+      ...(payload.division !== undefined ? { division: payload.division } : {}),
+      ...(payload.classroom_id !== undefined
+        ? { classroom_id: payload.classroom_id }
+        : {}),
+    }
+    if (
+      !isValidStudent(updated) ||
+      !classroomsBase.some((item) => item.id === updated.classroom_id)
+    ) {
+      return [422, { detail: "Invalid student data" }]
+    }
+
+    studentsBase[studentIndex] = updated
+    return [200, getStudent(updated.id)]
   })
 }
 
@@ -263,7 +466,7 @@ function itemResponse<T extends { id: number }>(rows: T[], url = "") {
 }
 
 function teacherSearch(teacher: Teacher, term: string) {
-  return `${teacher.name} ${teacher.subject}`.toLowerCase().includes(term)
+  return `${teacher.name} ${teacher.division}`.toLowerCase().includes(term)
 }
 
 function studentSearch(student: Student, term: string) {

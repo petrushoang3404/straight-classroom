@@ -1,9 +1,10 @@
 import { api } from "@/lib/api"
-import type { Classroom } from "@/lib/models"
+import type { Classroom, ClassroomInput } from "@/lib/models"
 
+import { ClassroomForm } from "./classroom-form"
 import { ResourceDetail, ResourceList, type ResourceConfig } from "./resource-ui"
 
-const config: ResourceConfig<Classroom> = {
+const config: ResourceConfig<Classroom, ClassroomInput> = {
   title: "Lớp học",
   singular: "Lớp học",
   description:
@@ -13,6 +14,12 @@ const config: ResourceConfig<Classroom> = {
   emptyText: "Chưa có lớp học phù hợp.",
   list: api.classrooms.list,
   get: api.classrooms.get,
+  create: api.classrooms.create,
+  update: api.classrooms.update,
+  form: {
+    component: ClassroomForm,
+    createLabel: "Thêm lớp học",
+  },
   primary: (classroom) => classroom.name,
   secondary: (classroom) => classroom.location,
   badge: (classroom) => `${classroom.capacity} chỗ`,

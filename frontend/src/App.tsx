@@ -4,7 +4,6 @@ import {
   LogOut,
   type LucideIcon,
   School,
-  Settings,
   UserRoundCheck,
   UsersRound,
 } from "lucide-react"
@@ -36,10 +35,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { toast } from "@/components/ui/toast"
-import { ClassroomDetail, ClassroomsList } from "@/routes/classrooms"
-import { LoginPage } from "@/routes/login"
-import { StudentDetail, StudentsList } from "@/routes/students"
-import { TeacherDetail, TeachersList } from "@/routes/teachers"
+import { ClassroomDetail, ClassroomsList } from "@/components/classrooms"
+import { LoginPage } from "@/components/login"
+import { StudentDetail, StudentsList } from "@/components/students"
+import { TeacherDetail, TeachersList } from "@/components/teachers"
 import { useAuthStore } from "@/lib/auth-store"
 
 type NavRoute = {
@@ -163,7 +162,7 @@ function AppLayout() {
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarSeparator />
+        <SidebarSeparator className="mx-0" />
 
         <SidebarContent>
           <SidebarGroup>
@@ -196,12 +195,6 @@ function AppLayout() {
           </div>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Cài đặt">
-                <Settings />
-                <span>Cài đặt</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
               <SidebarMenuButton onClick={handleLogout} tooltip="Đăng xuất">
                 <LogOut />
                 <span>Đăng xuất</span>
@@ -213,7 +206,7 @@ function AppLayout() {
       </Sidebar>
 
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-4">
+        <header className="relative flex h-16 shrink-0 items-center gap-3 bg-background/95 px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-sidebar-border">
           <SidebarTrigger />
           <div className="min-w-0">
             <h1 className="truncate text-base font-semibold">

@@ -1,9 +1,10 @@
 import { api } from "@/lib/api"
-import type { Teacher } from "@/lib/models"
+import type { Teacher, TeacherInput } from "@/lib/models"
 
 import { ResourceDetail, ResourceList, type ResourceConfig } from "./resource-ui"
+import { TeacherForm } from "./teacher-form"
 
-const config: ResourceConfig<Teacher> = {
+const config: ResourceConfig<Teacher, TeacherInput> = {
   title: "Giáo viên",
   singular: "Giáo viên",
   description:
@@ -13,16 +14,22 @@ const config: ResourceConfig<Teacher> = {
   emptyText: "Chưa có giáo viên phù hợp.",
   list: api.teachers.list,
   get: api.teachers.get,
+  create: api.teachers.create,
+  update: api.teachers.update,
+  form: {
+    component: TeacherForm,
+    createLabel: "Thêm giáo viên",
+  },
   primary: (teacher) => teacher.name,
-  secondary: (teacher) => teacher.subject,
-  badge: (teacher) => teacher.subject,
+  secondary: (teacher) => teacher.division,
+  badge: (teacher) => teacher.division,
   columns: [
-    { label: "Chuyên môn", value: (teacher) => teacher.subject },
+    { label: "Phân công", value: (teacher) => teacher.division },
     { label: "Mã hồ sơ", value: (teacher) => `#${teacher.id}` },
   ],
   details: [
     { label: "Tên giáo viên", value: (teacher) => teacher.name },
-    { label: "Chuyên môn", value: (teacher) => teacher.subject },
+    { label: "Chuyên môn / phân công", value: (teacher) => teacher.division },
     {
       label: "Lớp phụ trách",
       value: (teacher) =>

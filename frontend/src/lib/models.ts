@@ -14,7 +14,7 @@ export type ClassroomSummary = {
 export type TeacherSummary = {
   id: number
   name: string
-  subject: string
+  division: string
 }
 
 export type Classroom = {
@@ -28,7 +28,7 @@ export type Classroom = {
 export type Teacher = {
   id: number
   name: string
-  subject: string
+  division: string
   classrooms: ClassroomSummary[]
 }
 
@@ -41,3 +41,12 @@ export type Student = {
   classroom_id: number
   classroom: ClassroomSummary
 }
+
+export type ClassroomInput = Pick<Classroom, "name" | "capacity" | "location">
+
+export type TeacherInput = Pick<Teacher, "name" | "division">
+
+export type StudentInput = Pick<
+  Student,
+  "saint_name" | "first_name" | "last_name" | "division" | "classroom_id"
+>

@@ -1,12 +1,13 @@
 import { api } from "@/lib/api"
-import type { Student } from "@/lib/models"
+import type { Student, StudentInput } from "@/lib/models"
 
 import { ResourceDetail, ResourceList, type ResourceConfig } from "./resource-ui"
+import { StudentForm } from "./student-form"
 
 const fullName = (student: Student) =>
   `${student.saint_name} ${student.first_name} ${student.last_name}`
 
-const config: ResourceConfig<Student> = {
+const config: ResourceConfig<Student, StudentInput> = {
   title: "Học sinh",
   singular: "Học sinh",
   description:
@@ -16,6 +17,12 @@ const config: ResourceConfig<Student> = {
   emptyText: "Chưa có học sinh phù hợp.",
   list: api.students.list,
   get: api.students.get,
+  create: api.students.create,
+  update: api.students.update,
+  form: {
+    component: StudentForm,
+    createLabel: "Thêm học sinh",
+  },
   primary: fullName,
   secondary: (student) => `${student.division} · ${student.classroom.name}`,
   badge: (student) => student.division,
