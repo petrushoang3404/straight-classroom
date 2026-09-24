@@ -39,6 +39,7 @@ import { ClassroomDetail, ClassroomsList } from "@/components/classrooms"
 import { LoginPage } from "@/components/login"
 import { StudentDetail, StudentsList } from "@/components/students"
 import { TeacherDetail, TeachersList } from "@/components/teachers"
+import { UserAvatar } from "@/components/user-avatar"
 import { useAuthStore } from "@/lib/auth-store"
 
 type NavRoute = {
@@ -187,12 +188,6 @@ function AppLayout() {
         </SidebarContent>
 
         <SidebarFooter>
-          <div className="grid gap-1 px-2 py-1 text-xs group-data-[collapsible=icon]:hidden">
-            <span className="truncate font-medium">{session.displayName}</span>
-            <span className="truncate text-sidebar-foreground/65">
-              {session.username}
-            </span>
-          </div>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleLogout} tooltip="Đăng xuất">
@@ -215,6 +210,9 @@ function AppLayout() {
             <p className="truncate text-sm text-muted-foreground">
               {activeRoute.subtitle}
             </p>
+          </div>
+          <div className="ml-auto">
+            <UserAvatar displayName={session.displayName} role={session.role} />
           </div>
         </header>
 

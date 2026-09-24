@@ -203,6 +203,7 @@ export function setupMockApi(client: AxiosInstance) {
         username,
         displayName: displayNameFromUsername(username),
         provider: "password",
+        role: username.toLowerCase().includes("teacher") ? "teacher" : "admin",
       },
     ]
   })
@@ -212,6 +213,7 @@ export function setupMockApi(client: AxiosInstance) {
     username: "google.user@straight-classroom.local",
     displayName: "Google User",
     provider: "google",
+    role: "admin",
   })
 
   mock.onGet("/classrooms/").reply((config) => {

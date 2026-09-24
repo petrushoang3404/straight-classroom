@@ -2,12 +2,14 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 export type AuthProvider = "password" | "google"
+export type AuthRole = "admin" | "teacher"
 
 export type AuthSession = {
   token: string
   username: string
   displayName: string
   provider: AuthProvider
+  role: AuthRole
 }
 
 type AuthState = {
