@@ -6,6 +6,9 @@ start:
 end:
 	podman compose down -v
 
+fe-dev:
+	cd frontend && yarn dev
+
 be-dev:
 	cd backend && uv run fastapi dev main.py
 

@@ -4,7 +4,6 @@ import {
   LogOut,
   type LucideIcon,
   School,
-  Settings,
   UserRoundCheck,
   UsersRound,
 } from "lucide-react"
@@ -36,10 +35,12 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { toast } from "@/components/ui/toast"
-import { ClassroomDetail, ClassroomsList } from "@/routes/classrooms"
-import { LoginPage } from "@/routes/login"
-import { StudentDetail, StudentsList } from "@/routes/students"
-import { TeacherDetail, TeachersList } from "@/routes/teachers"
+import { ClassroomDetail, ClassroomsList } from "@/components/classrooms"
+import { LoginPage } from "@/components/login"
+import { NotFoundPage } from "@/components/not-found"
+import { StudentDetail, StudentsList } from "@/components/students"
+import { TeacherDetail, TeachersList } from "@/components/teachers"
+import { UserAvatar } from "@/components/user-avatar"
 import { useAuthStore } from "@/lib/auth-store"
 
 type NavRoute = {
@@ -78,6 +79,7 @@ function App() {
   return (
     <Routes>
       <Route element={<PublicRoute />} path="/login" />
+      <Route element={<NotFoundPage />} path="*" />
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route element={<Navigate replace to="/classrooms" />} index />
@@ -87,7 +89,6 @@ function App() {
           <Route element={<TeacherDetailRoute />} path="teachers/:id" />
           <Route element={<StudentsList />} path="students" />
           <Route element={<StudentDetailRoute />} path="students/:id" />
-          <Route element={<Navigate replace to="/classrooms" />} path="*" />
         </Route>
       </Route>
     </Routes>
@@ -163,7 +164,7 @@ function AppLayout() {
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarSeparator />
+        <SidebarSeparator className="mx-0" />
 
         <SidebarContent>
           <SidebarGroup>
@@ -188,19 +189,7 @@ function AppLayout() {
         </SidebarContent>
 
         <SidebarFooter>
-          <div className="grid gap-1 px-2 py-1 text-xs group-data-[collapsible=icon]:hidden">
-            <span className="truncate font-medium">{session.displayName}</span>
-            <span className="truncate text-sidebar-foreground/65">
-              {session.username}
-            </span>
-          </div>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Cài đặt">
-                <Settings />
-                <span>Cài đặt</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleLogout} tooltip="Đăng xuất">
                 <LogOut />
@@ -213,7 +202,7 @@ function AppLayout() {
       </Sidebar>
 
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-4">
+        <header className="flex h-16 shrink-0 items-center gap-3 bg-background/95 px-4">
           <SidebarTrigger />
           <div className="min-w-0">
             <h1 className="truncate text-base font-semibold">
@@ -223,7 +212,12 @@ function AppLayout() {
               {activeRoute.subtitle}
             </p>
           </div>
+          <div className="ml-auto">
+            <UserAvatar displayName={session.displayName} role={session.role} />
+          </div>
         </header>
+
+        <div aria-hidden="true" className="h-px shrink-0 bg-sidebar-border" />
 
         <main className="flex flex-1 flex-col p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">
@@ -237,17 +231,17 @@ function AppLayout() {
 
 function ClassroomDetailRoute() {
   const id = usePositiveId()
-  return id ? <ClassroomDetail id={id} /> : <Navigate replace to="/classrooms" />
+  return id ? <ClassroomDetail id={id} /> : <NotFoundPage embedded />
 }
 
 function TeacherDetailRoute() {
   const id = usePositiveId()
-  return id ? <TeacherDetail id={id} /> : <Navigate replace to="/teachers" />
+  return id ? <TeacherDetail id={id} /> : <NotFoundPage embedded />
 }
 
 function StudentDetailRoute() {
   const id = usePositiveId()
-  return id ? <StudentDetail id={id} /> : <Navigate replace to="/students" />
+  return id ? <StudentDetail id={id} /> : <NotFoundPage embedded />
 }
 
 function usePositiveId() {

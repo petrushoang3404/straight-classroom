@@ -93,6 +93,8 @@ Purpose: a compact review of the software engineering terms that appear while tu
 - Current project status: auth is not implemented yet. A production version should protect write endpoints and define roles.
 - Reference: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
 
+### JWT Token
+
 ## Architecture
 
 ### Monolithic Architecture
@@ -128,6 +130,8 @@ Purpose: a compact review of the software engineering terms that appear while tu
 - Current project status: route handlers and repositories are sync `def` functions using a sync SQLModel/SQLAlchemy session.
 - Important nuance: adding `async def` does not make blocking database code non-blocking unless the database driver/session is async too.
 - Reference: https://fastapi.tiangolo.com/async/
+
+### Datase Migration
 
 ## Testing
 

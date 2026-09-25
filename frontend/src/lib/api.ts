@@ -4,10 +4,13 @@ import type { AuthSession } from "./auth-store"
 import { useAuthStore } from "./auth-store"
 import type {
   Classroom,
+  ClassroomInput,
   ClassroomSummary,
   PaginatedResponse,
   Student,
+  StudentInput,
   Teacher,
+  TeacherInput,
   TeacherSummary,
 } from "./models"
 import { setupMockApi } from "./mock-api"
@@ -109,6 +112,14 @@ export const api = {
       const response = await client.get<Classroom>(`/classrooms/${id}`)
       return response.data
     },
+    create: async (payload: ClassroomInput) => {
+      const response = await client.post<Classroom>("/classrooms/", payload)
+      return response.data
+    },
+    update: async (id: number, payload: ClassroomInput) => {
+      const response = await client.patch<Classroom>(`/classrooms/${id}`, payload)
+      return response.data
+    },
     students: async (id: number, params: ListParams = {}) => {
       const response = await client.get<PaginatedResponse<Student> | Student[]>(
         `/classrooms/${id}/students`,
@@ -144,6 +155,14 @@ export const api = {
       const response = await client.get<Teacher>(`/teachers/${id}`)
       return response.data
     },
+    create: async (payload: TeacherInput) => {
+      const response = await client.post<Teacher>("/teachers/", payload)
+      return response.data
+    },
+    update: async (id: number, payload: TeacherInput) => {
+      const response = await client.patch<Teacher>(`/teachers/${id}`, payload)
+      return response.data
+    },
     classrooms: async (id: number) => {
       const response = await client.get<ClassroomSummary[]>(
         `/teachers/${id}/classrooms`
@@ -166,6 +185,14 @@ export const api = {
     },
     get: async (id: number) => {
       const response = await client.get<Student>(`/students/${id}`)
+      return response.data
+    },
+    create: async (payload: StudentInput) => {
+      const response = await client.post<Student>("/students/", payload)
+      return response.data
+    },
+    update: async (id: number, payload: StudentInput) => {
+      const response = await client.patch<Student>(`/students/${id}`, payload)
       return response.data
     },
   },
