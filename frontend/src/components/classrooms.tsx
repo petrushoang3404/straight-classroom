@@ -49,6 +49,13 @@ const config: ResourceConfig<Classroom, ClassroomInput> = {
   ],
 }
 
+// The student list scrolls instead of growing with the class. One
+// RelatedResourceRow is py-3 (1.5rem) around a two-line label (1.25rem title +
+// 0.125rem gap + 1rem description) plus its bottom border, so this height shows
+// exactly five rows.
+const VISIBLE_STUDENT_ROWS = 5
+const STUDENT_ROW_HEIGHT = "3.875rem + 1px"
+
 export function ClassroomsList() {
   return <ResourceList config={config} />
 }
@@ -183,20 +190,27 @@ function ClassroomDetailContent({
             />
           ) : (
             <div>
-              {students.map((student) => (
-                <RelatedResourceRow
-                  badge={
-                    <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
-                      {student.division}
-                    </span>
-                  }
-                  description={`Mã học sinh #${student.id}`}
-                  icon={UsersRound}
-                  key={student.id}
-                  onClick={() => navigate(`/students/${student.id}`)}
-                  title={`${student.saint_name} ${student.first_name} ${student.last_name}`}
-                />
-              ))}
+              <div
+                className="overflow-y-auto pr-1"
+                style={{
+                  maxHeight: `calc(${VISIBLE_STUDENT_ROWS} * (${STUDENT_ROW_HEIGHT}))`,
+                }}
+              >
+                {students.map((student) => (
+                  <RelatedResourceRow
+                    badge={
+                      <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                        {student.division}
+                      </span>
+                    }
+                    description={`Mã học sinh #${student.id}`}
+                    icon={UsersRound}
+                    key={student.id}
+                    onClick={() => navigate(`/students/${student.id}`)}
+                    title={`${student.saint_name} ${student.first_name} ${student.last_name}`}
+                  />
+                ))}
+              </div>
               {studentTotal > students.length ? (
                 <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
                   Đang hiển thị {students.length} trong tổng số {studentTotal} học sinh.
