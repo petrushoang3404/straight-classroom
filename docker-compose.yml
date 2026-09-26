@@ -11,5 +11,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
 
+  # MinIO stopped publishing free images in Sept 2026 (`minio/minio` and
+  # `quay.io/minio/minio` both refuse anonymous pulls). This is the same
+  # server, from the archived Bitnami build, which is still public.
+  storage:
+    image: docker.io/bitnamilegacy/minio:latest
+    container_name: straight_classroom_storage
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKET}
+    ports:
+      - "9000:9000"  # S3 API, also the host baked into presigned URLs
+      - "9001:9001"  # web console
+    volumes:
+      - minio_data:/bitnami/minio/data
+
 volumes:
   postgres_data:
+  minio_data:

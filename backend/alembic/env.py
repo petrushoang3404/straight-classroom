@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 # without this, autogenerate would see an empty schema.
 import backend.models.classroom_teachers
 import backend.models.classrooms
+import backend.models.materials
 import backend.models.students
 import backend.models.teachers
 import backend.models.users  # noqa: F401

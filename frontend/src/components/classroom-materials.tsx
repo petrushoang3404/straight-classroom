@@ -18,29 +18,17 @@ import {
   FormField,
   fieldAccessibility,
 } from "@/components/ui/form-field"
-import { Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/toast"
 
-const materialCategories = [
-  { value: "lesson-plan", label: "Giáo án" },
-  { value: "handout", label: "Tài liệu học viên" },
-  { value: "reference", label: "Tài liệu tham khảo" },
-  { value: "activity", label: "Tài liệu sinh hoạt" },
-  { value: "other", label: "Tài liệu khác" },
-]
+const maxFileSize = 50 * 1024 * 1024
 
-const maxFileSize = 25 * 1024 * 1024
+const fileHint = "PDF, JPEG hoặc PNG; tối đa 50 MB."
 
 function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`
   if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function fileTitle(file: File) {
-  return file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ")
 }
 
 export function ClassroomMaterials({
@@ -53,8 +41,6 @@ export function ClassroomMaterials({
   const [open, setOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState("")
-  const [title, setTitle] = useState("")
-  const [category, setCategory] = useState("lesson-plan")
   const [description, setDescription] = useState("")
 
   const selectFile = (nextFile: File | undefined) => {
@@ -62,13 +48,12 @@ export function ClassroomMaterials({
 
     if (nextFile.size > maxFileSize) {
       setFile(null)
-      setFileError("Tệp vượt quá giới hạn 25 MB.")
+      setFileError("Tệp vượt quá giới hạn 50 MB.")
       return
     }
 
     setFile(nextFile)
     setFileError("")
-    setTitle((current) => current || fileTitle(nextFile))
   }
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -84,8 +69,6 @@ export function ClassroomMaterials({
   const reset = () => {
     setFile(null)
     setFileError("")
-    setTitle("")
-    setCategory("lesson-plan")
     setDescription("")
   }
 
@@ -146,7 +129,7 @@ export function ClassroomMaterials({
 
             <div className="grid gap-4">
               <FormField
-                description="PDF, Word, PowerPoint, Excel hoặc văn bản; tối đa 25 MB."
+                description={fileHint}
                 error={fileError}
                 htmlFor="classroom-material-file"
                 label="Tệp tài liệu"
@@ -159,11 +142,11 @@ export function ClassroomMaterials({
                   onDrop={handleDrop}
                 >
                   <input
-                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                    accept=".pdf,.jpg,.jpeg,.png"
                     {...fieldAccessibility(
                       "classroom-material-file",
                       fileError,
-                      "PDF, Word, PowerPoint, Excel hoặc văn bản; tối đa 25 MB."
+                      fileHint
                     )}
                     className="sr-only"
                     id="classroom-material-file"
@@ -191,7 +174,7 @@ export function ClassroomMaterials({
                         Chọn tệp hoặc kéo thả vào đây
                       </span>
                       <span className="mt-0.5 text-xs text-muted-foreground">
-                        Tối đa 25 MB
+                        Tối đa 50 MB
                       </span>
                     </>
                   )}
@@ -213,38 +196,6 @@ export function ClassroomMaterials({
                   Xóa tệp đã chọn
                 </Button>
               ) : null}
-
-              <FormField
-                htmlFor="classroom-material-title"
-                label="Tên hiển thị"
-                required
-              >
-                <Input
-                  id="classroom-material-title"
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Ví dụ: Kế hoạch mục 1 - Khai Tâm"
-                  required
-                  value={title}
-                />
-              </FormField>
-
-              <FormField
-                htmlFor="classroom-material-category"
-                label="Phân loại"
-                required
-              >
-                <Select
-                  id="classroom-material-category"
-                  onChange={(event) => setCategory(event.target.value)}
-                  value={category}
-                >
-                  {materialCategories.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
-              </FormField>
 
               <FormField
                 description="Không bắt buộc. Giúp giáo viên và người quản lý nhận diện tài liệu."

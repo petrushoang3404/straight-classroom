@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-me"
     jwt_expire_minutes: int = 60 * 24
 
+    # Object storage for classroom materials. The endpoint is what gets baked
+    # into presigned URLs, so it must be reachable from the browser too.
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket: str = "classroom-materials"
+    minio_secure: bool = False
+
     model_config = SettingsConfigDict(env_file=ENV_PATH, env_file_encoding="utf-8")
 
 
