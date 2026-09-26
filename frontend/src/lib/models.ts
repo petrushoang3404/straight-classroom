@@ -69,3 +69,13 @@ export type StudentInput = Pick<
   Student,
   "saint_name" | "first_name" | "last_name" | "division" | "classroom_id"
 >
+
+export type Material = {
+  id: number
+  classroom_id: number
+  description: string | null
+  filename: string
+  content_type: string
+  size_bytes: number
+  created_at: string
+}

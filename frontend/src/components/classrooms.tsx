@@ -73,6 +73,7 @@ function ClassroomDetailContent({
   const navigate = useNavigate()
   const role = useAuthStore((state) => state.session?.role)
   const canOpenTeacherProfile = role === "admin"
+  const [materialTotal, setMaterialTotal] = useState(0)
   const [students, setStudents] = useState<Student[]>([])
   const [studentTotal, setStudentTotal] = useState(0)
   const [studentsLoading, setStudentsLoading] = useState(true)
@@ -149,10 +150,14 @@ function ClassroomDetailContent({
           value={`${classroom.teachers.length}`}
         />
         <SummaryMetric
-          description="Chưa có tài liệu đã tải lên"
+          description={
+            materialTotal === 0
+              ? "Chưa có tài liệu đã tải lên"
+              : "Tài liệu dùng chung cho lớp"
+          }
           icon={BookOpen}
           label="Tài liệu"
-          value="0"
+          value={`${materialTotal}`}
         />
       </div>
 
@@ -236,6 +241,7 @@ function ClassroomDetailContent({
       <ClassroomMaterials
         classroomId={classroom.id}
         classroomName={classroom.name}
+        onTotalChange={setMaterialTotal}
       />
     </div>
   )
