@@ -53,10 +53,10 @@ build again → dry-run → load.
 The sheets are a register, not a database export, so the tool fills in what the
 `Classroom`, `Teacher` and `Student` tables need:
 
-- **division** — from the file name (`PĐ NGHĨA SĨ`), spelled the way the app's
-  own dropdown spells it (`Nghĩa sĩ`, see `frontend/src/components/student-form.tsx`).
+- **division** — from the file name (`PĐ NGHĨA SĨ`), spelled the way the app
+  spells it (`Nghĩa Sĩ`, see `frontend/src/lib/divisions.ts`).
 - **classroom** — name and division from the file name, so `Lớp Nghĩa Sĩ 1A`
-  becomes the classroom `Nghĩa sĩ 1A`; students are linked to it.
+  becomes the classroom `Nghĩa Sĩ 1A`; students are linked to it.
 - **teachers** — read from the `Huynh Trưởng phụ trách` block at the top of each
   sheet, split into saint name + name, and linked to the classroom.
 - **capacity / location** — not in the sheets; see the flags above.

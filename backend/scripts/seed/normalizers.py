@@ -36,9 +36,9 @@ BLANK_TOKENS = frozenset(
     }
 )
 
-# Divisions ("phân đoàn") exactly as the frontend's dropdown spells them, see
-# frontend/src/components/student-form.tsx.
-DIVISIONS = ("Ấu nhi", "Thiếu nhi", "Nghĩa sĩ", "Hiệp sĩ")
+# The five ngành, spelled exactly as the app spells them, see
+# frontend/src/lib/divisions.ts.
+DIVISIONS = ("Chiên Con", "Ấu Nhi", "Thiếu Nhi", "Nghĩa Sĩ", "Hiệp Sĩ")
 _DIVISION_BY_KEY = {}
 for _division in DIVISIONS:
     _DIVISION_BY_KEY[

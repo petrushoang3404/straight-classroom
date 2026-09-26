@@ -11,7 +11,18 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
+/**
+ * Colours a detail page by what it is about -- the khăn quàng of a ngành, red
+ * for a Huynh Trưởng. `background` is the scarf colour and `foreground` the
+ * colour of the cross on it, which is what the icon is drawn in.
+ */
+export type DetailAccent = {
+  background: string
+  foreground: string
+}
+
 export function DetailPageHeader({
+  accent,
   badge,
   description,
   eyebrow,
@@ -20,6 +31,7 @@ export function DetailPageHeader({
   onEdit,
   title,
 }: {
+  accent?: DetailAccent | null
   badge?: ReactNode
   description?: ReactNode
   eyebrow: string
@@ -30,6 +42,13 @@ export function DetailPageHeader({
 }) {
   return (
     <header className="overflow-hidden rounded-lg border bg-card shadow-xs">
+      {accent ? (
+        <div
+          aria-hidden="true"
+          className="h-1.5"
+          style={{ backgroundColor: accent.background }}
+        />
+      ) : null}
       <div className="flex items-center justify-between gap-3 border-b bg-muted/25 px-4 py-3">
         <Button onClick={onBack} size="sm" variant="outline">
           <ArrowLeft />
@@ -42,7 +61,17 @@ export function DetailPageHeader({
       </div>
       <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex min-w-0 items-start gap-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div
+            className={cn(
+              "flex size-12 shrink-0 items-center justify-center rounded-lg",
+              !accent && "bg-primary/10 text-primary"
+            )}
+            style={
+              accent
+                ? { backgroundColor: accent.background, color: accent.foreground }
+                : undefined
+            }
+          >
             <Icon className="size-5" />
           </div>
           <div className="min-w-0">

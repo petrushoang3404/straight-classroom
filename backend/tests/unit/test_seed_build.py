@@ -19,7 +19,7 @@ def data_dir(tmp_path):
 def test_build_payload_is_json_serialisable(data_dir):
     payload, _ = build(data_dir)
     dumped = json.dumps(payload, ensure_ascii=False, default=_json_default)
-    assert "Nghĩa sĩ 1A" in dumped
+    assert "Nghĩa Sĩ 1A" in dumped
     assert '"date_of_birth": "2010-07-24"' in json.dumps(
         payload, ensure_ascii=False, indent=2, default=_json_default
     )

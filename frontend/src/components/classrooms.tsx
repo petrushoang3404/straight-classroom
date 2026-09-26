@@ -16,10 +16,13 @@ import {
   DetailSection,
   RelatedResourceRow,
 } from "@/components/detail-ui"
+import { ScarfBadge, ScarfMark } from "@/components/division-scarf"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api } from "@/lib/api"
 import { useAuthStore } from "@/lib/auth-store"
+import { scarfForClassroom, scarfForDivision } from "@/lib/divisions"
 import type { Classroom, ClassroomInput, Student } from "@/lib/models"
+import { cn } from "@/lib/utils"
 
 import { ClassroomForm } from "./classroom-form"
 import { ResourceDetail, ResourceList, type ResourceConfig } from "./resource-ui"
@@ -110,6 +113,7 @@ function ClassroomDetailContent({
     }
   }, [classroom.id])
 
+  const scarf = scarfForClassroom(classroom)
   const occupancy = classroom.capacity > 0
     ? Math.min(100, Math.round((studentTotal / classroom.capacity) * 100))
     : 0
@@ -118,11 +122,17 @@ function ClassroomDetailContent({
   return (
     <div className="grid gap-4">
       <DetailPageHeader
+        accent={
+          scarf ? { background: scarf.scarf, foreground: scarf.emblem } : null
+        }
         badge={
-          <span className="inline-flex items-center gap-1.5 rounded-md border bg-accent px-2.5 py-1 text-sm font-medium text-accent-foreground">
-            <UsersRound className="size-3.5" />
-            {classroom.capacity} chỗ
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {scarf ? <ScarfBadge scarf={scarf} /> : null}
+            <span className="inline-flex items-center gap-1.5 rounded-md border bg-accent px-2.5 py-1 text-sm font-medium text-accent-foreground">
+              <UsersRound className="size-3.5" />
+              {classroom.capacity} chỗ
+            </span>
+          </div>
         }
         description={
           <span className="inline-flex items-center gap-1.5">
@@ -198,11 +208,7 @@ function ClassroomDetailContent({
               >
                 {students.map((student) => (
                   <RelatedResourceRow
-                    badge={
-                      <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
-                        {student.division}
-                      </span>
-                    }
+                    badge={<StudentDivisionBadge division={student.division} />}
                     description={`Mã học sinh #${student.id}`}
                     icon={UsersRound}
                     key={student.id}
@@ -258,6 +264,30 @@ function ClassroomDetailContent({
         onTotalChange={setMaterialTotal}
       />
     </div>
+  )
+}
+
+/** A student's ngành, with its scarf when the name is one we know. */
+function StudentDivisionBadge({ division }: { division: string }) {
+  const scarf = scarfForDivision(division)
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground",
+        !scarf && "bg-muted"
+      )}
+      style={
+        scarf
+          ? {
+              backgroundColor: `color-mix(in oklab, ${scarf.scarf} 22%, var(--card))`,
+            }
+          : undefined
+      }
+    >
+      {scarf ? <ScarfMark className="size-3.5" scarf={scarf} /> : null}
+      {division}
+    </span>
   )
 }
 

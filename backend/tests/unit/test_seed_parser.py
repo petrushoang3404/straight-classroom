@@ -34,8 +34,8 @@ def sheet(tmp_path):
 
 
 def test_classroom_identity_comes_from_the_file_name(sheet):
-    assert sheet.name == "Nghĩa sĩ 1A"
-    assert sheet.division == "Nghĩa sĩ"
+    assert sheet.name == "Nghĩa Sĩ 1A"
+    assert sheet.division == "Nghĩa Sĩ"
     assert sheet.school_year == "2025-2026"
 
 
@@ -48,13 +48,13 @@ def test_teacher_block_is_read_and_split(sheet):
         {
             "name": "Nguyễn Ngọc Hoà",
             "saint_name": "Luca",
-            "division": "Nghĩa sĩ",
+            "division": "Nghĩa Sĩ",
             "phone_number": "0919354439",
         },
         {
             "name": "Nguyễn Vương Tuệ Mẫn",
             "saint_name": "Maria",
-            "division": "Nghĩa sĩ",
+            "division": "Nghĩa Sĩ",
             "phone_number": "0372152246",
         },
     ]
@@ -69,7 +69,7 @@ def test_student_is_normalised(sheet):
     assert student["saint_name"] == "Augustinô"
     assert student["last_name"] == "Nguyễn Trần Bảo"
     assert student["first_name"] == "An"
-    assert student["division"] == "Nghĩa sĩ"
+    assert student["division"] == "Nghĩa Sĩ"
     assert student["date_of_birth"].isoformat() == "2010-07-24"
     assert student["place_of_birth"] == "TP. Hồ Chí Minh"
     # `Gx Tân Đức` and `TÂN ĐỨC` are the same parish.
@@ -108,7 +108,7 @@ def test_excluded_columns_are_reported_not_dropped_silently(tmp_path):
         "STT,TÊN THÁNH,HỌ,TÊN,CỘT LẠ\n1,MARIA,NGUYỄN,AN,gì đó\n", encoding="utf-8"
     )
     parsed = parse_students_file(path)
-    assert parsed.name == "Nghĩa sĩ 9Z"
+    assert parsed.name == "Nghĩa Sĩ 9Z"
     assert any("unmapped column" in issue.message for issue in parsed.issues)
     assert len(parsed.students) == 1
 

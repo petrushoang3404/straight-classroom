@@ -89,9 +89,17 @@ class Loader:
             self.notes.append(f"{action:9} {kind:9} {label}{detail}")
 
     def classroom(self, payload: dict) -> Classroom:
-        existing = self.session.exec(
-            select(Classroom).where(Classroom.name == payload["name"])
-        ).first()
+        # Matched on the name ignoring case and accents, so re-spelling a class
+        # (`Nghĩa sĩ 1A` -> `Nghĩa Sĩ 1A`) renames it instead of duplicating it.
+        # Both tables are small enough to compare in Python.
+        existing = next(
+            (
+                row
+                for row in self.session.exec(select(Classroom)).all()
+                if compare_key(row.name) == compare_key(payload["name"])
+            ),
+            None,
+        )
         values = {
             "name": payload["name"],
             "capacity": payload["capacity"],
@@ -105,7 +113,9 @@ class Loader:
             return classroom
 
         changed = (
-            _apply(existing, values, ("capacity", "location")) if self.update else []
+            _apply(existing, values, ("name", "capacity", "location"))
+            if self.update
+            else []
         )
         self._record(
             "classroom", "updated" if changed else "unchanged", existing.name, changed
@@ -113,11 +123,15 @@ class Loader:
         return existing
 
     def teacher(self, payload: dict, classroom: Classroom) -> Teacher:
-        existing = self.session.exec(
-            select(Teacher).where(
-                Teacher.name == payload["name"], Teacher.division == payload["division"]
-            )
-        ).first()
+        wanted = (compare_key(payload["name"]), compare_key(payload["division"]))
+        existing = next(
+            (
+                row
+                for row in self.session.exec(select(Teacher)).all()
+                if (compare_key(row.name), compare_key(row.division)) == wanted
+            ),
+            None,
+        )
         if existing is None:
             teacher = Teacher(
                 **{k: v for k, v in payload.items() if k in TEACHER_FIELDS}

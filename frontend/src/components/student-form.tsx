@@ -17,9 +17,10 @@ import { Select } from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
 import { api } from "@/lib/api"
 import { getApiErrorMessage } from "@/lib/api-error"
+import { DIVISION_LABELS } from "@/lib/divisions"
 import type { ClassroomSummary, Student, StudentInput } from "@/lib/models"
 
-const standardDivisions = ["Ấu nhi", "Thiếu nhi", "Nghĩa sĩ", "Hiệp sĩ"]
+const standardDivisions = DIVISION_LABELS
 const requiredText = (value: string) =>
   value.trim().length > 0 || "Vui lòng nhập thông tin này."
 

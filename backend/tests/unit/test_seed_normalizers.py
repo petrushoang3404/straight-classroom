@@ -104,10 +104,11 @@ def test_normalize_place(raw, expected):
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
-        ("PĐ NGHĨA SĨ", "Nghĩa sĩ"),
-        ("Nghĩa Sĩ", "Nghĩa sĩ"),
-        ("phan doan au nhi", "Ấu nhi"),
-        ("THIẾU NHI", "Thiếu nhi"),
+        ("PĐ NGHĨA SĨ", "Nghĩa Sĩ"),
+        ("Nghĩa sĩ", "Nghĩa Sĩ"),
+        ("phan doan au nhi", "Ấu Nhi"),
+        ("THIẾU NHI", "Thiếu Nhi"),
+        ("chiên con", "Chiên Con"),
     ],
 )
 def test_normalize_division_matches_the_app_spelling(raw, expected):
