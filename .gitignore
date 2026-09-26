@@ -1,1 +1,5 @@
 .env
+
+# Real parish records (names, birth dates, parents' phone numbers) and
+# anything generated from them. Never committed; see docs/seed-data.md.
+data/
