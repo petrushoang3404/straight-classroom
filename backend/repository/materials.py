@@ -19,7 +19,7 @@ class MaterialRepo:
         rows = self.session.exec(
             select(Material)
             .where(Material.classroom_id == classroom_id)
-            .order_by(Material.created_at.desc())
+            .order_by(Material.created_at.desc(), Material.id.desc())
             .limit(limit)
             .offset(offset)
         ).all()

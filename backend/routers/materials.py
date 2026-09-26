@@ -99,7 +99,7 @@ def create_material(
     if stat.size > MAX_FILE_SIZE:
         storage.remove_object(material.object_key)
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="File exceeds the 50 MB limit",
         )
     if stat.content_type not in ALLOWED_CONTENT_TYPES:
