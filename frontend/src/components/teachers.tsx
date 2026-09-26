@@ -17,7 +17,9 @@ import {
   InfoItem,
   RelatedResourceRow,
 } from "@/components/detail-ui"
+import { ScarfBadge } from "@/components/division-scarf"
 import { api } from "@/lib/api"
+import { LEADER_SCARF, scarfForDivision } from "@/lib/divisions"
 import { formatDate } from "@/lib/format"
 import type { Teacher, TeacherInput } from "@/lib/models"
 
@@ -72,18 +74,31 @@ function TeacherDetailContent({
 }) {
   const navigate = useNavigate()
   const phoneNumber = teacher.phone_number?.trim() || null
+  // The ngành they are assigned to, shown next to their own red scarf.
+  const divisionScarf = scarfForDivision(teacher.division)
 
   return (
     <div className="grid gap-4">
       <DetailPageHeader
+        accent={{
+          background: LEADER_SCARF.scarf,
+          foreground: LEADER_SCARF.emblem,
+        }}
         badge={
-          <span className="inline-flex items-center gap-1.5 rounded-md border bg-accent px-2.5 py-1 text-sm font-medium text-accent-foreground">
-            <BookUser className="size-3.5" />
-            {teacher.division}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <ScarfBadge scarf={LEADER_SCARF} />
+            {divisionScarf ? (
+              <ScarfBadge label={teacher.division} scarf={divisionScarf} />
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-md border bg-accent px-2.5 py-1 text-sm font-medium text-accent-foreground">
+                <BookUser className="size-3.5" />
+                {teacher.division}
+              </span>
+            )}
+          </div>
         }
-        description="Hồ sơ giáo viên và các lớp đang phụ trách."
-        eyebrow={`Giáo viên #${teacher.id}`}
+        description="Hồ sơ Huynh Trưởng và các lớp đang phụ trách."
+        eyebrow={`Huynh Trưởng #${teacher.id}`}
         icon={UserRoundCheck}
         onBack={() => navigate(config.basePath)}
         onEdit={onEdit}
@@ -95,11 +110,11 @@ function TeacherDetailContent({
           <DetailSection
             description="Thông tin chính và thông tin phục vụ việc lập danh sách."
             icon={BookUser}
-            title="Thông tin giáo viên"
+            title="Thông tin Huynh Trưởng"
           >
             <InfoGrid>
               <InfoItem label="Tên thánh" value={teacher.saint_name} />
-              <InfoItem label="Tên giáo viên" value={teacher.name} />
+              <InfoItem label="Tên Huynh Trưởng" value={teacher.name} />
               <InfoItem label="Chuyên môn / phân công" value={teacher.division} />
               <InfoItem
                 icon={Cake}
@@ -120,13 +135,13 @@ function TeacherDetailContent({
           </DetailSection>
 
           <DetailSection
-            description="Các lớp đã được phân công cho giáo viên này."
+            description="Các lớp đã được phân công cho Huynh Trưởng này."
             icon={School}
             title={`Lớp phụ trách (${teacher.classrooms.length})`}
           >
             {teacher.classrooms.length === 0 ? (
               <DetailEmptyState
-                description="Giáo viên chưa được phân công lớp nào."
+                description="Huynh Trưởng chưa được phân công lớp nào."
                 icon={School}
                 title="Chưa có lớp phụ trách"
               />
@@ -175,7 +190,7 @@ function TeacherDetailContent({
 
           <DetailSection icon={UserRoundCheck} title="Định danh hồ sơ">
             <InfoGrid className="sm:grid-cols-1">
-              <InfoItem label="Mã giáo viên" value={`#${teacher.id}`} />
+              <InfoItem label="Mã Huynh Trưởng" value={`#${teacher.id}`} />
               <InfoItem
                 label="Số lớp phụ trách"
                 value={`${teacher.classrooms.length} lớp`}

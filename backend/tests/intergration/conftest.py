@@ -6,6 +6,7 @@ from sqlmodel import SQLModel, create_engine
 # before create_all() runs -- otherwise it silently creates nothing for them.
 import backend.models.classroom_teachers
 import backend.models.classrooms
+import backend.models.materials
 import backend.models.students
 import backend.models.teachers
 import backend.models.users  # noqa: F401

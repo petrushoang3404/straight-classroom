@@ -6,6 +6,7 @@ import type {
   Classroom,
   ClassroomInput,
   ClassroomSummary,
+  Material,
   PaginatedResponse,
   Student,
   StudentInput,
@@ -60,6 +61,13 @@ type ListParams = {
 
 type StudentListParams = ListParams & {
   classroomId?: number
+}
+
+// What the API hands back so the browser can upload straight to object storage.
+type UploadSlot = {
+  object_key: string
+  upload_url: string
+  expires_in_seconds: number
 }
 
 const listParams = (params: ListParams, searchKey?: string) => ({
@@ -141,6 +149,52 @@ export const api = {
     },
     unassignTeacher: async (id: number, teacherId: number) => {
       await client.delete(`/classrooms/${id}/teachers/${teacherId}`)
+    },
+    materials: {
+      list: async (classroomId: number, params: ListParams = {}) => {
+        const response = await client.get<
+          PaginatedResponse<Material> | Material[]
+        >(`/classrooms/${classroomId}/materials`, { params: listParams(params) })
+        return normalizeList(response.data, params)
+      },
+      // Three steps: reserve a presigned URL, send the bytes straight to
+      // object storage, then register the finished upload. The PUT uses a
+      // bare axios call on purpose -- `client` would attach the
+      // Authorization header and a JSON content type, both of which break
+      // the signature on a presigned URL.
+      upload: async (classroomId: number, file: File, description: string) => {
+        const { data: slot } = await client.post<UploadSlot>(
+          `/classrooms/${classroomId}/materials/upload-url`,
+          {
+            filename: file.name,
+            content_type: file.type,
+            size_bytes: file.size,
+          }
+        )
+
+        await axios.put(slot.upload_url, file, {
+          headers: { "Content-Type": file.type },
+        })
+
+        const response = await client.post<Material>(
+          `/classrooms/${classroomId}/materials`,
+          {
+            object_key: slot.object_key,
+            filename: file.name,
+            description: description.trim() || null,
+          }
+        )
+        return response.data
+      },
+      downloadUrl: async (classroomId: number, materialId: number) => {
+        const response = await client.get<{ download_url: string }>(
+          `/classrooms/${classroomId}/materials/${materialId}/download-url`
+        )
+        return response.data.download_url
+      },
+      remove: async (classroomId: number, materialId: number) => {
+        await client.delete(`/classrooms/${classroomId}/materials/${materialId}`)
+      },
     },
   },
   teachers: {
