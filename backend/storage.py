@@ -40,8 +40,21 @@ def build_object_key(classroom_id: int, filename: str) -> str:
     The random segment keeps two uploads of the same file apart and stops a
     client from handing back a key that points at somebody else's object.
     """
-    suffix = PurePath(filename).suffix.lower()
-    return f"{classroom_prefix(classroom_id)}{uuid4().hex}{suffix}"
+    return _unique_key(classroom_prefix(classroom_id), filename)
+
+
+def attendance_prefix(classroom_id: int) -> str:
+    # Its own tree, so an attendance photo can never be registered as a
+    # material (or the other way round) and then deleted from under it.
+    return f"attendance/{classroom_id}/"
+
+
+def build_attendance_key(classroom_id: int, filename: str) -> str:
+    return _unique_key(attendance_prefix(classroom_id), filename)
+
+
+def _unique_key(prefix: str, filename: str) -> str:
+    return f"{prefix}{uuid4().hex}{PurePath(filename).suffix.lower()}"
 
 
 def presigned_put_url(object_key: str) -> str:
@@ -72,6 +85,15 @@ def stat_object(object_key: str) -> Object | None:
         return client.stat_object(settings.minio_bucket, object_key)
     except S3Error:
         return None
+
+
+def read_object(object_key: str) -> bytes:
+    response = client.get_object(settings.minio_bucket, object_key)
+    try:
+        return response.read()
+    finally:
+        response.close()
+        response.release_conn()
 
 
 def remove_object(object_key: str) -> None:

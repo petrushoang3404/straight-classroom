@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 # Importing the model modules registers their tables on SQLModel.metadata;
 # without this, autogenerate would see an empty schema.
+import backend.models.attendance
 import backend.models.classroom_teachers
 import backend.models.classrooms
 import backend.models.materials

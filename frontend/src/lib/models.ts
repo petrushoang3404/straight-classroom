@@ -79,3 +79,41 @@ export type Material = {
   size_bytes: number
   created_at: string
 }
+
+export type Face = {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  confidence: number
+}
+
+// Boxes are in pixels of the original photo, so draw them against width/height.
+export type FaceDetection = {
+  width: number
+  height: number
+  count: number
+  faces: Face[]
+}
+
+export type AttendanceRecord = {
+  student_id: number
+  present: boolean
+}
+
+export type AttendanceSession = {
+  id: number
+  classroom_id: number
+  session_date: string
+  detected_count: number | null
+  present_count: number
+  total_count: number
+  created_at: string
+  records: AttendanceRecord[]
+}
+
+export type AttendanceInput = {
+  session_date: string
+  photo_object_key: string | null
+  records: AttendanceRecord[]
+}

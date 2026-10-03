@@ -4,6 +4,7 @@ from sqlmodel import SQLModel, create_engine
 
 # Import every model module so their tables are registered on SQLModel.metadata
 # before create_all() runs -- otherwise it silently creates nothing for them.
+import backend.models.attendance
 import backend.models.classroom_teachers
 import backend.models.classrooms
 import backend.models.materials

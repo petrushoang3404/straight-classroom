@@ -1,5 +1,5 @@
 .PHONY: start end be-dev be-test be-migrate be-migration be-seed-user be-seed-build \
-	be-seed-load be-fmt be-lint
+	be-seed-load be-fetch-weights be-fmt be-lint
 
 start:
 	podman compose up -d
@@ -35,6 +35,10 @@ be-seed-build:
 # data/seed/seed.json -> database. Usage: make be-seed-load [args=--dry-run]
 be-seed-load:
 	cd backend && PYTHONPATH=.. uv run python -m backend.scripts.seed.load_seed $(args)
+
+# Face-detection model for attendance (not committed).
+be-fetch-weights:
+	cd backend && PYTHONPATH=.. uv run python -m backend.inference.fetch_weights
 
 be-fmt:
 	cd backend && uv run ruff format .

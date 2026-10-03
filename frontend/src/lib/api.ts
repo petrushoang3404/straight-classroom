@@ -3,9 +3,12 @@ import axios from "axios"
 import type { AuthSession } from "./auth-store"
 import { useAuthStore } from "./auth-store"
 import type {
+  AttendanceInput,
+  AttendanceSession,
   Classroom,
   ClassroomInput,
   ClassroomSummary,
+  FaceDetection,
   Material,
   PaginatedResponse,
   Student,
@@ -194,6 +197,47 @@ export const api = {
       },
       remove: async (classroomId: number, materialId: number) => {
         await client.delete(`/classrooms/${classroomId}/materials/${materialId}`)
+      },
+    },
+    attendance: {
+      list: async (classroomId: number, params: ListParams = {}) => {
+        const response = await client.get<
+          PaginatedResponse<AttendanceSession> | AttendanceSession[]
+        >(`/classrooms/${classroomId}/attendance`, { params: listParams(params) })
+        return normalizeList(response.data, params)
+      },
+      // Same handshake as materials: reserve a slot, PUT the photo straight
+      // to object storage (bare axios, see above), then let the API count the
+      // faces in what landed there.
+      detect: async (classroomId: number, photo: File) => {
+        const { data: slot } = await client.post<UploadSlot>(
+          `/classrooms/${classroomId}/attendance/photo-upload-url`,
+          {
+            filename: photo.name,
+            content_type: photo.type,
+            size_bytes: photo.size,
+          }
+        )
+
+        await axios.put(slot.upload_url, photo, {
+          headers: { "Content-Type": photo.type },
+        })
+
+        const response = await client.post<FaceDetection>(
+          `/classrooms/${classroomId}/attendance/detect`,
+          { object_key: slot.object_key }
+        )
+        return { objectKey: slot.object_key, detection: response.data }
+      },
+      create: async (classroomId: number, payload: AttendanceInput) => {
+        const response = await client.post<AttendanceSession>(
+          `/classrooms/${classroomId}/attendance`,
+          payload
+        )
+        return response.data
+      },
+      remove: async (classroomId: number, sessionId: number) => {
+        await client.delete(`/classrooms/${classroomId}/attendance/${sessionId}`)
       },
     },
   },

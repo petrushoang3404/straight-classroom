@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     minio_bucket: str = "classroom-materials"
     minio_secure: bool = False
 
+    # Face detector for attendance photos; `make be-fetch-weights` puts the
+    # file in place.
+    face_model_path: Path = BASE_DIR / "backend/inference/weights/yolov8n-face.onnx"
+    face_conf_threshold: float = 0.4
+
     model_config = SettingsConfigDict(env_file=ENV_PATH, env_file_encoding="utf-8")
 
 

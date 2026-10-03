@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router"
 
+import { ClassroomAttendance } from "@/components/classroom-attendance"
 import { ClassroomMaterials } from "@/components/classroom-materials"
 import {
   DetailEmptyState,
@@ -257,6 +258,8 @@ function ClassroomDetailContent({
 
         </div>
       </div>
+
+      <ClassroomAttendance classroomId={classroom.id} students={students} />
 
       <ClassroomMaterials
         classroomId={classroom.id}
