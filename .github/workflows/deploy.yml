@@ -1,9 +1,7 @@
-name: CI/CD
+name: Deploy
 
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -11,64 +9,13 @@ permissions:
   contents: read
 
 jobs:
-  backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    env:
-      # Settings requires these; the tests use SQLite and never connect.
-      POSTGRES_USER: ci
-      POSTGRES_PASSWORD: ci
-      POSTGRES_DB: ci
-      PYTHONPATH: ..
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          cache-dependency-glob: backend/uv.lock
-
-      - run: uv sync --frozen
-
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-
-      # The inference tests load the real face model.
-      - uses: actions/cache@v4
-        id: weights
-        with:
-          path: backend/inference/weights
-          key: face-weights-${{ hashFiles('backend/inference/fetch_weights.py') }}
-      - if: steps.weights.outputs.cache-hit != 'true'
-        run: uv run python -m backend.inference.fetch_weights
-
-      - run: uv run pytest
-
-  frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - run: corepack enable && corepack prepare yarn@4 --activate
-      - run: yarn install --immutable
-
-      # Type-checks (tsc -b) and builds. `yarn lint` isn't run: typescript-eslint
-      # doesn't support TypeScript 7 yet and crashes on startup.
-      - run: yarn build
+  ci:
+    # A manual run from another branch must not reach the server.
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci.yml
 
   images:
-    # Only main publishes images; pull requests stop after the checks.
-    if: github.event_name != 'pull_request'
-    needs: [backend, frontend]
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -118,8 +65,6 @@ jobs:
       frontend: ${{ steps.names.outputs.frontend }}
 
   deploy:
-    # Deploys only from main, and one at a time.
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: images
     runs-on: ubuntu-latest
     concurrency:
@@ -135,19 +80,17 @@ jobs:
       - name: Set up SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
           cat > ~/.ssh/config <<CONFIG
           Host vps
             HostName ${VPS_HOST}
             User ${VPS_USER}
             Port ${{ secrets.VPS_PORT || 22 }}
             IdentityFile ~/.ssh/id_deploy
-            StrictHostKeyChecking yes
+            StrictHostKeyChecking accept-new
           CONFIG
 
       # The VPS keeps its own .env (secrets); only the compose file is shipped.
