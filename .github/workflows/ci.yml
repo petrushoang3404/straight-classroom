@@ -1,0 +1,67 @@
+name: CI
+
+# Pushes to main run these checks through deploy.yml (workflow_call), so the
+# images are built from exactly the commit that was checked.
+on:
+  pull_request:
+    branches: [main]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Settings requires these; the tests use SQLite and never connect.
+      POSTGRES_USER: ci
+      POSTGRES_PASSWORD: ci
+      POSTGRES_DB: ci
+      PYTHONPATH: ..
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - run: uv sync --frozen
+
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+      # The inference tests load the real face model.
+      - uses: actions/cache@v4
+        id: weights
+        with:
+          path: backend/inference/weights
+          key: face-weights-${{ hashFiles('backend/inference/fetch_weights.py') }}
+      - if: steps.weights.outputs.cache-hit != 'true'
+        run: uv run python -m backend.inference.fetch_weights
+
+      - run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: corepack enable && corepack prepare yarn@4 --activate
+      - run: yarn install --immutable
+
+      # Type-checks (tsc -b) and builds. `yarn lint` isn't run: typescript-eslint
+      # doesn't support TypeScript 7 yet and crashes on startup.
+      - run: yarn build

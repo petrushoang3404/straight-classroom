@@ -3,7 +3,7 @@ from sqlmodel import Session, create_engine, text
 
 from backend.config import settings
 
-DATABASE_URL = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@localhost/{settings.postgres_db}"
+DATABASE_URL = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}/{settings.postgres_db}"
 
 engine = create_engine(DATABASE_URL, echo=True)
 

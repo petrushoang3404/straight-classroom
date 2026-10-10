@@ -2,14 +2,21 @@ services:
   database:
     image: postgres:18-alpine
     container_name: straight_classroom_db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      # Loopback only: `make be-dev` on the host can reach it, the internet can't.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   # MinIO stopped publishing free images in Sept 2026 (`minio/minio` and
   # `quay.io/minio/minio` both refuse anonymous pulls). This is the same
@@ -17,15 +24,57 @@ services:
   storage:
     image: docker.io/bitnamilegacy/minio:latest
     container_name: straight_classroom_storage
+    restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
       MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKET}
     ports:
       - "9000:9000"  # S3 API, also the host baked into presigned URLs
-      - "9001:9001"  # web console
+      - "127.0.0.1:9001:9001"  # web console, not public
     volumes:
       - minio_data:/bitnami/minio/data
+
+  # CI builds and pushes the images; the deploy job points BACKEND_IMAGE and
+  # FRONTEND_IMAGE at them. Unset (dev, or a manual run), compose builds locally.
+  backend:
+    image: ${BACKEND_IMAGE:-straight-classroom-backend}
+    build: ./backend
+    container_name: straight_classroom_backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      storage:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: database
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-1440}
+      # Must be the address the *browser* uses to reach MinIO (it is baked
+      # into presigned URLs), e.g. `203.0.113.10:9000`. The API uses the same
+      # address for its own calls.
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+    # Only reachable through the frontend's /api proxy.
+    expose:
+      - "8000"
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-straight-classroom-frontend}
+    build: ./frontend
+    container_name: straight_classroom_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${HTTP_PORT:-80}:80"
 
 volumes:
   postgres_data:

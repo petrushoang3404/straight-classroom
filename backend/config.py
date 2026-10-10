@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     postgres_user: str
     postgres_password: str
     postgres_db: str
+    # Compose points this at the database service; "localhost" is the dev setup.
+    postgres_host: str = "localhost"
 
     # Defaulted so the app runs out of the box in dev; override in .env for
     # anything that isn't a throwaway local database.
