@@ -1,8 +1,13 @@
-.PHONY: start end be-dev be-test be-migrate be-migration be-seed-user be-seed-build \
+.PHONY: start deploy end be-dev be-test be-migrate be-migration be-seed-user be-seed-build \
 	be-seed-load be-fetch-weights be-fmt be-lint
 
+# Dev: just the backing services; run the backend and frontend on the host.
 start:
-	podman compose up -d
+	podman compose up -d database storage
+
+# Full stack in containers (what the VPS runs).
+deploy:
+	docker compose up -d --build
 
 end:
 	podman compose down -v

@@ -1,0 +1,10 @@
+.venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+tests
+# Fetched at image build time instead.
+inference/weights
+Dockerfile
+.dockerignore
