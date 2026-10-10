@@ -35,7 +35,10 @@ services:
     volumes:
       - minio_data:/bitnami/minio/data
 
+  # CI builds and pushes the images; the deploy job points BACKEND_IMAGE and
+  # FRONTEND_IMAGE at them. Unset (dev, or a manual run), compose builds locally.
   backend:
+    image: ${BACKEND_IMAGE:-straight-classroom-backend}
     build: ./backend
     container_name: straight_classroom_backend
     restart: unless-stopped
@@ -64,6 +67,7 @@ services:
       - "8000"
 
   frontend:
+    image: ${FRONTEND_IMAGE:-straight-classroom-frontend}
     build: ./frontend
     container_name: straight_classroom_frontend
     restart: unless-stopped

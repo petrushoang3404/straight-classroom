@@ -1,0 +1,181 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Settings requires these; the tests use SQLite and never connect.
+      POSTGRES_USER: ci
+      POSTGRES_PASSWORD: ci
+      POSTGRES_DB: ci
+      PYTHONPATH: ..
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - run: uv sync --frozen
+
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+      # The inference tests load the real face model.
+      - uses: actions/cache@v4
+        id: weights
+        with:
+          path: backend/inference/weights
+          key: face-weights-${{ hashFiles('backend/inference/fetch_weights.py') }}
+      - if: steps.weights.outputs.cache-hit != 'true'
+        run: uv run python -m backend.inference.fetch_weights
+
+      - run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: corepack enable && corepack prepare yarn@4 --activate
+      - run: yarn install --immutable
+
+      # Type-checks (tsc -b) and builds. `yarn lint` isn't run: typescript-eslint
+      # doesn't support TypeScript 7 yet and crashes on startup.
+      - run: yarn build
+
+  images:
+    # Only main publishes images; pull requests stop after the checks.
+    if: github.event_name != 'pull_request'
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Image names must be lowercase; the repo path may not be.
+      - id: names
+        run: |
+          prefix="${REGISTRY}/${GITHUB_REPOSITORY,,}"
+          echo "backend=${prefix}/backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=${prefix}/frontend" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ steps.names.outputs.backend }}:latest
+            ${{ steps.names.outputs.backend }}:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          tags: |
+            ${{ steps.names.outputs.frontend }}:latest
+            ${{ steps.names.outputs.frontend }}:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+    outputs:
+      backend: ${{ steps.names.outputs.backend }}
+      frontend: ${{ steps.names.outputs.frontend }}
+
+  deploy:
+    # Deploys only from main, and one at a time.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: images
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_PATH: ${{ secrets.VPS_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<CONFIG
+          Host vps
+            HostName ${VPS_HOST}
+            User ${VPS_USER}
+            Port ${{ secrets.VPS_PORT || 22 }}
+            IdentityFile ~/.ssh/id_deploy
+            StrictHostKeyChecking yes
+          CONFIG
+
+      # The VPS keeps its own .env (secrets); only the compose file is shipped.
+      - name: Upload compose file
+        run: scp docker-compose.yml "vps:${VPS_PATH}/docker-compose.yml"
+
+      - name: Pull and restart
+        env:
+          BACKEND_IMAGE: ${{ needs.images.outputs.backend }}:${{ github.sha }}
+          FRONTEND_IMAGE: ${{ needs.images.outputs.frontend }}:${{ github.sha }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The token goes over stdin so it never lands in a command line.
+          echo "$GHCR_TOKEN" | ssh vps "docker login ghcr.io -u '$GHCR_USER' --password-stdin"
+          ssh vps "cd '$VPS_PATH' \
+            && export BACKEND_IMAGE='$BACKEND_IMAGE' FRONTEND_IMAGE='$FRONTEND_IMAGE' \
+            && docker compose pull backend frontend \
+            && docker compose up -d --remove-orphans \
+            && docker image prune -f"
+
+      - name: Smoke test
+        run: |
+          for i in $(seq 1 30); do
+            if ssh vps "curl -fsS http://localhost/api/openapi.json >/dev/null"; then
+              echo "up"; exit 0
+            fi
+            sleep 3
+          done
+          ssh vps "cd '$VPS_PATH' && docker compose ps && docker compose logs --tail 50 backend"
+          exit 1

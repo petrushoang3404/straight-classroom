@@ -12,9 +12,9 @@ from sqlmodel import Session
 # metadata; without this, resolving User.teacher_id's foreign key (and
 # Teacher's relationships) fails since this script never loads them
 # otherwise (see backend/alembic/env.py for the same requirement).
-import backend.models.classroom_teachers  # noqa: F401
-import backend.models.classrooms  # noqa: F401
-import backend.models.students  # noqa: F401
+import backend.models.classroom_teachers
+import backend.models.classrooms
+import backend.models.students
 import backend.models.teachers  # noqa: F401
 from backend.models.users import User
 from backend.repository.database import engine
