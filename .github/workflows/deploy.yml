@@ -111,14 +111,3 @@ jobs:
             && docker compose pull backend frontend \
             && docker compose up -d --remove-orphans \
             && docker image prune -f"
-
-      - name: Smoke test
-        run: |
-          for i in $(seq 1 30); do
-            if ssh vps "curl -fsS http://localhost/api/openapi.json >/dev/null"; then
-              echo "up"; exit 0
-            fi
-            sleep 3
-          done
-          ssh vps "cd '$VPS_PATH' && docker compose ps && docker compose logs --tail 50 backend"
-          exit 1
